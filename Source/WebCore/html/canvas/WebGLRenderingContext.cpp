@@ -2792,14 +2792,13 @@ void WebGLRenderingContext::polygonOffset(GC3Dfloat factor, GC3Dfloat units)
     cleanupAfterGraphicsCall(false);
 }
 
-void WebGLRenderingContext::readPixels(GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height, GC3Denum format, GC3Denum type, ArrayBufferView* pixels, ExceptionCode& ec)
+void WebGLRenderingContext::readPixels(GC3Dint x, GC3Dint y, GC3Dsizei width, GC3Dsizei height, GC3Denum format, GC3Denum type, ArrayBufferView* pixels, ExceptionCode&)
 {
     if (isContextLost())
         return;
-    if (!canvas()->originClean()) {
-        ec = SECURITY_ERR;
-        return;
-    }
+    // Due to WebGL's same-origin restrictions, it is not possible to
+    // taint the origin using the WebGL API.
+    ASSERT(canvas()->originClean());
     // Validate input parameters.
     if (!pixels) {
         m_context->synthesizeGLError(GraphicsContext3D::INVALID_VALUE);
@@ -3142,7 +3141,11 @@ void WebGLRenderingContext::texImage2D(GC3Denum target, GC3Dint level, GC3Denum 
         return;
     if (!validateHTMLImageElement(image))
         return;
-    checkOrigin(image);
+    if (wouldTaintOrigin(image)) {
+        ec = SECURITY_ERR;
+        return;
+    }
+
     texImage2DImpl(target, level, internalformat, format, type, image->cachedImage()->image(),
                    m_unpackFlipY, m_unpackPremultiplyAlpha, ec);
 }
@@ -3157,7 +3160,10 @@ void WebGLRenderingContext::texImage2D(GC3Denum target, GC3Dint level, GC3Denum 
         m_context->synthesizeGLError(GraphicsContext3D::INVALID_VALUE);
         return;
     }
-    checkOrigin(canvas);
+    if (wouldTaintOrigin(canvas)) {
+        ec = SECURITY_ERR;
+        return;
+    }
     RefPtr<ImageData> imageData = canvas->getImageData();
     if (imageData)
         texImage2D(target, level, internalformat, format, type, imageData.get(), ec);
@@ -3167,7 +3173,7 @@ void WebGLRenderingContext::texImage2D(GC3Denum target, GC3Dint level, GC3Denum 
 }
 
 #if ENABLE(VIDEO)
-PassRefPtr<Image> WebGLRenderingContext::videoFrameToImage(HTMLVideoElement* video)
+PassRefPtr<Image> WebGLRenderingContext::videoFrameToImage(HTMLVideoElement* video, ExceptionCode& ec)
 {
     if (!video || !video->videoWidth() || !video->videoHeight()) {
         m_context->synthesizeGLError(GraphicsContext3D::INVALID_VALUE);
@@ -3179,7 +3185,10 @@ PassRefPtr<Image> WebGLRenderingContext::videoFrameToImage(HTMLVideoElement* vid
         m_context->synthesizeGLError(GraphicsContext3D::OUT_OF_MEMORY);
         return 0;
     }
-    checkOrigin(video);
+    if (wouldTaintOrigin(video)) {
+        ec = SECURITY_ERR;
+        return 0;
+    }
     IntRect destRect(0, 0, size.width(), size.height());
     // FIXME: Turn this into a GPU-GPU texture copy instead of CPU readback.
     video->paintCurrentFrameInContext(buf->context(), destRect);
@@ -3192,8 +3201,8 @@ void WebGLRenderingContext::texImage2D(GC3Denum target, GC3Dint level, GC3Denum 
     ec = 0;
     if (isContextLost())
         return;
-    RefPtr<Image> image = videoFrameToImage(video);
-    if (!video)
+    RefPtr<Image> image = videoFrameToImage(video, ec);
+    if (!image)
         return;
     texImage2DImpl(target, level, internalformat, format, type, image.get(), m_unpackFlipY, m_unpackPremultiplyAlpha, ec);
 }
@@ -3334,7 +3343,10 @@ void WebGLRenderingContext::texSubImage2D(GC3Denum target, GC3Dint level, GC3Din
         return;
     if (!validateHTMLImageElement(image))
         return;
-    checkOrigin(image);
+    if (wouldTaintOrigin(image)) {
+        ec = SECURITY_ERR;
+        return;
+    }
     texSubImage2DImpl(target, level, xoffset, yoffset, format, type, image->cachedImage()->image(),
                       m_unpackFlipY, m_unpackPremultiplyAlpha, ec);
 }
@@ -3349,7 +3361,10 @@ void WebGLRenderingContext::texSubImage2D(GC3Denum target, GC3Dint level, GC3Din
         m_context->synthesizeGLError(GraphicsContext3D::INVALID_VALUE);
         return;
     }
-    checkOrigin(canvas);
+    if (wouldTaintOrigin(canvas)) {
+        ec = SECURITY_ERR;
+        return;
+    }
     RefPtr<ImageData> imageData = canvas->getImageData();
     if (imageData)
         texSubImage2D(target, level, xoffset, yoffset, format, type, imageData.get(), ec);
@@ -3365,8 +3380,8 @@ void WebGLRenderingContext::texSubImage2D(GC3Denum target, GC3Dint level, GC3Din
     ec = 0;
     if (isContextLost())
         return;
-    RefPtr<Image> image = videoFrameToImage(video);
-    if (!video)
+    RefPtr<Image> image = videoFrameToImage(video, ec);
+    if (!image)
         return;
     texSubImage2DImpl(target, level, xoffset, yoffset, format, type, image.get(), m_unpackFlipY, m_unpackPremultiplyAlpha, ec);
 }
