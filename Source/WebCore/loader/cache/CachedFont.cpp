@@ -100,11 +100,11 @@ void CachedFont::beginLoadIfNeeded(CachedResourceLoader* dl)
     }
 }
 
-bool CachedFont::ensureCustomFontData()
+bool CachedFont::ensureCustomFontData(bool woffEnabled)
 {
 #ifdef STORE_FONT_CUSTOM_PLATFORM_DATA
     if (!m_fontData && !errorOccurred() && !isLoading() && m_data) {
-        m_fontData = createFontCustomPlatformData(m_data.get());
+        m_fontData = createFontCustomPlatformData(m_data.get(), woffEnabled);
         if (!m_fontData)
             setStatus(DecodeError);
     }

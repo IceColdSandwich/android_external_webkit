@@ -97,7 +97,7 @@ void CSSFontFaceSource::fontLoaded(CachedFont*)
         m_face->fontLoaded(this);
 }
 
-SimpleFontData* CSSFontFaceSource::getFontData(const FontDescription& fontDescription, bool syntheticBold, bool syntheticItalic, CSSFontSelector* fontSelector)
+SimpleFontData* CSSFontFaceSource::getFontData(const FontDescription& fontDescription, bool syntheticBold, bool syntheticItalic, CSSFontSelector* fontSelector, bool woffEnabled)
 {
     // If the font hasn't loaded or an error occurred, then we've got nothing.
     if (!isValid())
@@ -160,7 +160,7 @@ SimpleFontData* CSSFontFaceSource::getFontData(const FontDescription& fontDescri
 #endif
             {
                 // Create new FontPlatformData from our CGFontRef, point size and ATSFontRef.
-                if (!m_font->ensureCustomFontData())
+                if (!m_font->ensureCustomFontData(woffEnabled))
                     return 0;
 
                 fontData.set(new SimpleFontData(m_font->platformDataFromCustomData(fontDescription.computedPixelSize(), syntheticBold, syntheticItalic, fontDescription.orientation(),

@@ -64,7 +64,7 @@ public:
 
     void beginLoadIfNeeded(CachedResourceLoader* dl);
 
-    bool ensureCustomFontData();
+    bool ensureCustomFontData(bool woffEnabled);
     FontPlatformData platformDataFromCustomData(float size, bool bold, bool italic, FontOrientation = Horizontal, TextOrientation = TextOrientationVerticalRight, FontWidthVariant = RegularWidth, FontRenderingMode = NormalRenderingMode);
 
 #if ENABLE(SVG_FONTS)

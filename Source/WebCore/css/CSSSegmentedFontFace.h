@@ -51,7 +51,7 @@ public:
 
     void appendFontFace(PassRefPtr<CSSFontFace>);
 
-    FontData* getFontData(const FontDescription&);
+    FontData* getFontData(const FontDescription&, bool woffEnabled);
 
 private:
     CSSSegmentedFontFace(CSSFontSelector*);

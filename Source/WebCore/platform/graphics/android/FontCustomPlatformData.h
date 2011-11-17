@@ -55,7 +55,7 @@ private:
     SkTypeface* m_typeface;
 };
 
-FontCustomPlatformData* createFontCustomPlatformData(SharedBuffer* buffer);
+FontCustomPlatformData* createFontCustomPlatformData(SharedBuffer* buffer, bool woffEnabled);
 
 } // namespace WebCore
 

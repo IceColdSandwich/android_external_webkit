@@ -58,7 +58,7 @@ public:
 
     virtual void fontLoaded(CachedFont*);
     
-    SimpleFontData* getFontData(const FontDescription&, bool syntheticBold, bool syntheticItalic, CSSFontSelector*);
+    SimpleFontData* getFontData(const FontDescription&, bool syntheticBold, bool syntheticItalic, CSSFontSelector*, bool woffEnabled);
     
     void pruneTable();
 
