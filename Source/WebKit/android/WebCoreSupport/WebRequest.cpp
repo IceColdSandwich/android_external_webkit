@@ -1,5 +1,6 @@
 /*
  * Copyright 2010, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,6 +83,9 @@ WebRequest::WebRequest(WebUrlLoaderClient* loader, const WebResourceRequest& web
     m_request->set_referrer(webResourceRequest.referrer());
     m_request->set_method(webResourceRequest.method());
     m_request->set_load_flags(webResourceRequest.loadFlags());
+
+    ResourceType::Type chromiumTargetType = convertWebkitTargetTypeToChromiumTargetType(webResourceRequest.target_type());
+    m_request->set_priority(net::DetermineRequestPriority(chromiumTargetType));
 }
 
 // This is a special URL for Android. Query the Java InputStream
@@ -549,6 +553,53 @@ void WebRequest::OnReadCompleted(net::URLRequest* request, int bytesRead)
         startReading();
     } else {
         finish(false);
+    }
+}
+
+// Webkit and Chromium Network Stack target type enums are not ordered in the same manner
+// An explicit conversion is needed
+ResourceType::Type WebRequest::convertWebkitTargetTypeToChromiumTargetType(WebCore::ResourceRequestBase::TargetType webkitType)
+{
+    switch (webkitType)
+    {
+        case WebCore::ResourceRequestBase::TargetIsMainFrame:
+            return ResourceType::MAIN_FRAME;
+
+        case WebCore::ResourceRequestBase::TargetIsSubframe:
+            return ResourceType::SUB_FRAME;
+
+        case WebCore::ResourceRequestBase::TargetIsSubresource:
+            return ResourceType::SUB_RESOURCE;
+
+        case WebCore::ResourceRequestBase::TargetIsStyleSheet:
+            return ResourceType::STYLESHEET;
+
+        case WebCore::ResourceRequestBase::TargetIsScript:
+            return ResourceType::SCRIPT;
+
+        case WebCore::ResourceRequestBase::TargetIsFontResource:
+            return ResourceType::FONT_RESOURCE;
+
+        case WebCore::ResourceRequestBase::TargetIsImage:
+            return ResourceType::IMAGE;
+
+        case WebCore::ResourceRequestBase::TargetIsObject:
+            return ResourceType::OBJECT;
+
+        case WebCore::ResourceRequestBase::TargetIsMedia:
+            return ResourceType::MEDIA;
+
+        case WebCore::ResourceRequestBase::TargetIsWorker:
+            return ResourceType::WORKER;
+
+        case WebCore::ResourceRequestBase::TargetIsSharedWorker:
+            return ResourceType::SHARED_WORKER;
+
+        case WebCore::ResourceRequestBase::TargetIsPrefetch:
+            return ResourceType::PREFETCH;
+
+        default:
+            return ResourceType::SUB_RESOURCE;
     }
 }
 
