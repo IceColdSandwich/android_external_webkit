@@ -40,6 +40,7 @@
 #include <openssl/x509.h>
 #include <string>
 #include <utils/AssetManager.h>
+#include <cutils/properties.h>
 
 extern android::AssetManager* globalAssetManager();
 
@@ -60,6 +61,25 @@ namespace android {
 
 namespace {
     const int kInitialReadBufSize = 32768;
+}
+
+static bool ShouldSetRequestPriority()
+{
+    static bool isInitialized = false;
+    static int setPriority = 0;
+
+    if (isInitialized == false)
+    {
+        char value[10] = {'0', '\0'};
+        property_get("net.webkit.setpri", value, "0");
+        setPriority = (unsigned)atoi(value);
+
+        isInitialized = true;
+
+        __android_log_print(ANDROID_LOG_VERBOSE, "WebRequest",  "WebRequest::WebRequest, setPriority = %d", setPriority);
+    }
+
+    return (setPriority != 0);
 }
 
 WebRequest::WebRequest(WebUrlLoaderClient* loader, const WebResourceRequest& webResourceRequest)
@@ -84,8 +104,11 @@ WebRequest::WebRequest(WebUrlLoaderClient* loader, const WebResourceRequest& web
     m_request->set_method(webResourceRequest.method());
     m_request->set_load_flags(webResourceRequest.loadFlags());
 
-    ResourceType::Type chromiumTargetType = convertWebkitTargetTypeToChromiumTargetType(webResourceRequest.target_type());
-    m_request->set_priority(net::DetermineRequestPriority(chromiumTargetType));
+    if (ShouldSetRequestPriority())
+    {
+        ResourceType::Type chromiumTargetType = convertWebkitTargetTypeToChromiumTargetType(webResourceRequest.target_type());
+        m_request->set_priority(net::DetermineRequestPriority(chromiumTargetType));
+    }
 }
 
 // This is a special URL for Android. Query the Java InputStream
