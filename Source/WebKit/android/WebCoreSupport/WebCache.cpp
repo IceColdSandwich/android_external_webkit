@@ -33,6 +33,7 @@
 #include "WebUrlLoaderClient.h"
 
 #include <wtf/text/CString.h>
+#include "network_monitor_factory.h"
 
 using namespace WTF;
 using namespace disk_cache;
@@ -105,7 +106,9 @@ WebCache::WebCache(bool isPrivateBrowsing)
     scoped_refptr<base::MessageLoopProxy> cacheMessageLoopProxy = ioThread->message_loop_proxy();
 
     static const int kMaximumCacheSizeBytes = 20 * 1024 * 1024;
-    m_hostResolver = net::CreateSystemHostResolver(net::HostResolver::kDefaultParallelism, 0, 0,ioThread->message_loop());
+
+    network::NetworkMonitorFactory* network_factory = network::NetworkMonitorFactory::GetMonitorFactoryInstance();
+    m_hostResolver = network_factory->CreateHostResolver(net::HostResolver::kDefaultParallelism, 0, 0, ioThread->message_loop());
 
     m_proxyConfigService = new ProxyConfigServiceAndroid();
     net::HttpCache::BackendFactory* backendFactory;

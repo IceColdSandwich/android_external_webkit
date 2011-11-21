@@ -123,7 +123,8 @@ LOCAL_SRC_FILES += \
 
 LOCAL_C_INCLUDES += \
 	external/openssl/include \
-	libcore/include
+	libcore/include \
+	external/chromium/net/network_monitor
 
 # Needed for autofill.
 ifeq ($(ENABLE_AUTOFILL),true)
