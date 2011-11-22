@@ -54,6 +54,8 @@
 
 // FIXME: More that is in common with SubresourceLoader should move up into ResourceLoader.
 
+extern void StatHubMainUrlLoaded();
+
 namespace WebCore {
 
 MainResourceLoader::MainResourceLoader(Frame* frame)
@@ -478,6 +480,8 @@ void MainResourceLoader::didFinishLoading(double finishTime)
 #if ENABLE(OFFLINE_WEB_APPLICATIONS)
     dl->applicationCacheHost()->finishedLoadingMainResource();
 #endif
+
+    StatHubMainUrlLoaded();
 }
 
 void MainResourceLoader::didFail(const ResourceError& error)

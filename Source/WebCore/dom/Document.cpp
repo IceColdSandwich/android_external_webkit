@@ -7,6 +7,7 @@
  * Copyright (C) 2008, 2009 Torch Mobile Inc. All rights reserved. (http://www.torchmobile.com/)
  * Copyright (C) 2008, 2009 Google Inc. All rights reserved.
  * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies)
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -156,6 +157,7 @@
 #include <wtf/PassRefPtr.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/StringBuffer.h>
+#include <wtf/text/CString.h>
 
 #if ENABLE(SHARED_WORKERS)
 #include "SharedWorkerRepository.h"
@@ -234,6 +236,8 @@
 using namespace std;
 using namespace WTF;
 using namespace Unicode;
+
+extern void StatHubUpdateMainUrl(const char* main_url);
 
 namespace WebCore {
 
@@ -2311,11 +2315,22 @@ void Document::logExceptionToConsole(const String& errorMessage, int lineNumber,
     addMessage(JSMessageSource, messageType, ErrorMessageLevel, errorMessage, lineNumber, sourceURL, callStack);
 }
 
+static void updateDocumentUrl(const KURL& url) {
+
+    unsigned short main_url_len = url.string().length();
+
+    if (main_url_len && url.protocolInHTTPFamily()) {
+        StatHubUpdateMainUrl(url.string().latin1().data());
+    }
+}
+
 void Document::setURL(const KURL& url)
 {
     const KURL& newURL = url.isEmpty() ? blankURL() : url;
     if (newURL == m_url)
         return;
+
+    updateDocumentUrl(url);
 
     m_url = newURL;
     m_documentURI = m_url.string();

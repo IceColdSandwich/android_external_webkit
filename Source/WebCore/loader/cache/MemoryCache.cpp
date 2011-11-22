@@ -3,6 +3,7 @@
     Copyright (C) 2001 Dirk Mueller (mueller@kde.org)
     Copyright (C) 2002 Waldo Bastian (bastian@kde.org)
     Copyright (C) 2004, 2005, 2006, 2007, 2008 Apple Inc. All rights reserved.
+    Copyright (c) 2011, Code Aurora Forum. All rights reserved
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -41,6 +42,9 @@
 #include <stdio.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/text/CString.h>
+
+#define URL_ACTION_NOTIFY_CLEAR     6
+extern void StatHubCmd(unsigned short cmd, const char* param1, const char* param2);
 
 using namespace std;
 
@@ -636,6 +640,8 @@ MemoryCache::Statistics MemoryCache::getStatistics()
 
 void MemoryCache::setDisabled(bool disabled)
 {
+    StatHubCmd((unsigned short)URL_ACTION_NOTIFY_CLEAR, "", "");
+
     m_disabled = disabled;
     if (!m_disabled)
         return;
