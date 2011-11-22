@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (C) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +56,7 @@
 #include <wtf/Platform.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/text/AtomicString.h>
+#include <cutils/properties.h>
 
 namespace android {
 
@@ -387,7 +389,24 @@ void JavaBridge::SharedTimerFired(JNIEnv* env, jobject)
 
 void JavaBridge::SetCacheSize(JNIEnv* env, jobject obj, jint bytes)
 {
-    WebCore::memoryCache()->setCapacities(0, bytes/2, bytes);
+    unsigned minDeadSize = 0;
+    unsigned maxDeadSize = bytes/2;
+
+    if (bytes) {
+        char value[PROPERTY_VALUE_MAX] = {'\0'};
+
+        property_get("net.webkit.cache.mindeadsize", value, "0");
+        minDeadSize = (unsigned)atoi(value);
+        if (property_get("net.webkit.cache.maxdeadsize", value, NULL) > 0) {
+            maxDeadSize = (unsigned)atoi(value);
+        }
+        // If properties are not set correctly, revert to default values
+        if (!(minDeadSize <= maxDeadSize && maxDeadSize <= (unsigned)bytes)) {
+            minDeadSize = 0;
+            maxDeadSize = bytes/2;
+        }
+    }
+    WebCore::memoryCache()->setCapacities(minDeadSize, maxDeadSize, bytes);
 }
 
 void JavaBridge::SetNetworkOnLine(JNIEnv* env, jobject obj, jboolean online)
