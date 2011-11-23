@@ -2,6 +2,7 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -41,6 +42,8 @@ public:
 
     virtual String cssText() const;
 
+    virtual bool operator==(const CSSRule& o);
+
 private:
     CSSCharsetRule(CSSStyleSheet* parent, const String& encoding);
 
@@ -50,7 +53,16 @@ private:
     virtual unsigned short type() const { return CHARSET_RULE; }
 
     String m_encoding;
+
 };
+
+inline bool CSSCharsetRule::operator==(const CSSRule& o)
+{
+    if (type() != o.type())
+        return false;
+
+    return m_encoding == static_cast<const CSSCharsetRule*>(&o)->m_encoding;
+}
 
 } // namespace WebCore
 

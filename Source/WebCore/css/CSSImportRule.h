@@ -2,6 +2,7 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -54,6 +55,8 @@ public:
 
     virtual void addSubresourceStyleURLs(ListHashSet<KURL>& urls);
 
+    virtual bool operator==(const CSSRule& o);
+
 private:
     CSSImportRule(CSSStyleSheet* parent, const String& href, PassRefPtr<MediaList>);
 
@@ -80,6 +83,15 @@ private:
     CachedResourceHandle<CachedCSSStyleSheet> m_cachedSheet;
     bool m_loading;
 };
+
+inline bool CSSImportRule::operator==(const CSSRule& o)
+{
+   if (type() != o.type())
+       return false;
+   const CSSImportRule* rule = static_cast<const CSSImportRule*>(&o);
+
+   return (m_strHref == rule->m_strHref) && (*(media()) == *(rule->media()));
+}
 
 } // namespace WebCore
 

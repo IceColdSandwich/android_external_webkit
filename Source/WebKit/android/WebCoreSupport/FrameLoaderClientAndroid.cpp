@@ -1,5 +1,6 @@
 /*
  * Copyright 2007, The Android Open Source Project
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -81,6 +82,13 @@
 
 #include <utils/AssetManager.h>
 #include <wtf/text/CString.h>
+
+#include "cutils/log.h"
+#define LOG_TAG_INSTR "PageLoadInstr"
+
+#include "CSSStyleSelector.cpp"
+
+#include <cutils/properties.h>
 
 #define verifiedOk() // Verified that we don't need to implement this.
 
@@ -644,6 +652,16 @@ void FrameLoaderClientAndroid::postProgressEstimateChangedNotification() {
 // setProgress(1) because postProgressEstimateChangedNotification will do so.
 void FrameLoaderClientAndroid::postProgressFinishedNotification() {
     WebViewCore* core =  WebViewCore::getWebViewCore(m_frame->view());
+
+     char sclog[PROPERTY_VALUE_MAX] = {'\0'};
+     property_get("debug.webkit.stylecache.log", sclog, "0");
+     int stylecacheLog = (unsigned)atoi(sclog);
+
+    if(stylecacheLog == 1) {
+        if (core && !m_frame->tree()->parent())
+            __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG_INSTR,"Style Caching Cache Hit %d\n", m_frame->document()->styleSelector()->cacheHit());
+    }
+
     if (!m_frame->tree()->parent()) {
         // only need to notify Java for the top frame
         core->notifyProgressFinished();

@@ -4,6 +4,7 @@
  *           (C) 2001 Peter Kelly (pmk@post.com)
  *           (C) 2001 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,6 +29,7 @@
 #include "Document.h"
 #include "FragmentScriptingPermission.h"
 #include "NamedNodeMap.h"
+#include "SSCNode.h"
 #include "ScrollTypes.h"
 
 namespace WebCore {
@@ -348,6 +350,8 @@ public:
 #endif
 
     virtual bool isSpellCheckingEnabled() const;
+    PassRefPtr<SSCNode> sscNode() const { return m_sscNode; }
+    void setSSCNode(PassRefPtr<SSCNode> sscNode);
 
     PassRefPtr<WebKitAnimationList> webkitGetAnimations() const;
 
@@ -355,6 +359,7 @@ protected:
     Element(const QualifiedName& tagName, Document* document, ConstructionType type)
         : ContainerNode(document, type)
         , m_tagName(tagName)
+        , m_sscNode(0)
     {
     }
 
@@ -407,6 +412,7 @@ private:
     virtual PassRefPtr<Element> cloneElementWithoutAttributesAndChildren() const;
 
     QualifiedName m_tagName;
+    RefPtr<SSCNode> m_sscNode;
     virtual NodeRareData* createRareData();
 
     ElementRareData* rareData() const;

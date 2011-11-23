@@ -6,6 +6,7 @@
  *           (C) 2007 David Smith (catfish.man@gmail.com)
  * Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010 Apple Inc. All rights reserved.
  *           (C) 2007 Eric Seidel (eric@webkit.org)
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -54,6 +55,7 @@
 #include "RenderView.h"
 #include "RenderWidget.h"
 #include "Settings.h"
+#include "StyleCacheManager.h"
 #include "ShadowRoot.h"
 #include "TextIterator.h"
 #include "WebKitAnimationList.h"
@@ -65,6 +67,11 @@
 #include "SVGElement.h"
 #include "SVGNames.h"
 #endif
+
+#include "cutils/log.h"
+#define LOG_TAG_INSTR "PageLoadInstr"
+
+#include <cutils/properties.h>
 
 namespace WebCore {
 
@@ -948,6 +955,47 @@ void Element::insertedIntoDocument()
                 updateId(nullAtom, idItem->value());
         }
     }
+
+    char value[PROPERTY_VALUE_MAX] = {'\0'};
+    property_get("net.webkit.stylecache", value, "1");
+    int stylecache = (unsigned)atoi(value);
+
+    if(stylecache == 0)
+        return;
+
+    if (document()->documentElement() == this) {
+
+        const KURL& tempURL = document()->url();
+        const String& tempURLS = tempURL.string();
+        KURL url = document()->completeURL(tempURLS);
+        const String& urls = url.string();
+
+        char sclog[PROPERTY_VALUE_MAX] = {'\0'};
+        property_get("debug.webkit.stylecache.log", sclog, "0");
+        int stylecacheLog = (unsigned)atoi(sclog);
+
+        if (!url.isEmpty() && document()->url() != blankURL()) {
+
+            m_sscNode = styleCache()->getSSCTree(urls);
+            if (!m_sscNode) {
+                if(stylecacheLog == 1)
+                     __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG_INSTR,"Style Cache Inactive");
+                RefPtr<RenderStyle> style = document()->styleSelector()->calcStyleForElement(this);
+                if(style) {
+                    if(stylecacheLog == 1)
+                        __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG_INSTR,"Style Cache Inactive Adding URL to Style Cache");
+                    RefPtr<CSSRuleList> ruleList = document()->styleSelector()->styleRulesForElement(this, true);
+                    m_sscNode = SSCNode::create(this, style, ruleList);
+                    bool pFrame = document()->frame() && document()->frame()->tree() ? document()->frame()->tree()->parent() == NULL : false;
+                    styleCache()->add(url, m_sscNode, pFrame);
+                }
+            } else {
+                 if(stylecacheLog == 1)
+                     __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG_INSTR,"Style Cache Active");
+            }
+        }
+    }
+
 }
 
 void Element::removedFromDocument()
@@ -963,6 +1011,17 @@ void Element::removedFromDocument()
     ContainerNode::removedFromDocument();
     if (Node* shadow = shadowRoot())
         shadow->removedFromDocument();
+}
+
+void Element::setSSCNode(PassRefPtr<SSCNode> sscNode)
+{
+    if (m_sscNode) {
+        for (Element* child = firstElementChild(); child; child = child->nextElementSibling()) {
+            if (child->sscNode())
+                child->setSSCNode(0);
+        }
+    }
+    m_sscNode = sscNode;
 }
 
 void Element::insertedIntoTree(bool deep)

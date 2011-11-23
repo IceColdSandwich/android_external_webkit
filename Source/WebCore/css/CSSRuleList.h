@@ -2,6 +2,7 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006 Apple Computer, Inc.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -57,6 +58,8 @@ public:
     {
         return m_list.get();
     }
+
+    bool operator<=(const CSSRuleList& o);
 
 private:
     CSSRuleList();

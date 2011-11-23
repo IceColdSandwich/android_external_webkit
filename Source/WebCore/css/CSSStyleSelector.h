@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -98,7 +99,8 @@ public:
         void popParent(Element* parent);
 
 
-        PassRefPtr<RenderStyle> styleForElement(Element* e, RenderStyle* parentStyle = 0, bool allowSharing = true, bool resolveForRootDefault = false, bool matchVisitedPseudoClass = false);
+        PassRefPtr<RenderStyle> styleForElement(Element*, RenderStyle* parentStyle = 0, bool allowSharing = true, bool resolveForRootDefault = false, bool matchVisitedPseudoClass = false, bool avoidStyleCache = false);
+        PassRefPtr<RenderStyle> calcStyleForElement(Element*, RenderStyle* parentStyle = 0, bool allowSharing = true, bool matchVisitedPseudoClass = false, bool resolveForRootDefault = false, PassRefPtr<CSSRuleList> ruleList = 0);
         
         void keyframeStylesForAnimation(Element*, const RenderStyle*, KeyframeList& list);
 
@@ -249,8 +251,10 @@ public:
 
         typedef HashMap<AtomicStringImpl*, RefPtr<WebKitCSSKeyframesRule> > KeyframesRuleMap;
         KeyframesRuleMap m_keyframesRuleMap;
+        int m_cacheHit;
 
     public:
+        int cacheHit() { return m_cacheHit; }
         static RenderStyle* styleNotYetAvailable() { return s_styleNotYetAvailable; }
 
         class SelectorChecker {

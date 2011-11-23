@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -126,6 +127,8 @@
 #if ENABLE(WEB_AUTOFILL)
 #include "autofill/WebAutofill.h"
 #endif
+
+#include "StyleCacheManager.h"
 
 using namespace JSC::Bindings;
 
@@ -1922,6 +1925,9 @@ static void ClearWebCoreCache()
     WebCore::pageCache()->setCapacity(0);
     WebCore::pageCache()->releaseAutoreleasedPagesNow();
     WebCore::pageCache()->setCapacity(pageCapacity);
+
+   //clear style cache
+   styleCache()->clear();
 }
 
 static void ClearWebViewCache()

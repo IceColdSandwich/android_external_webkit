@@ -1,6 +1,7 @@
 /*
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * Copyright (C) 2004, 2005, 2006, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -141,6 +142,8 @@ public:
 
     bool isInlineStyleDeclaration();
 
+    bool operator==(const CSSMutableStyleDeclaration& o);
+
 protected:
     CSSMutableStyleDeclaration(CSSRule* parentRule);
 
@@ -226,6 +229,29 @@ inline CSSMutableStyleDeclarationConstIterator& CSSMutableStyleDeclarationConstI
 { 
     --m_current; 
     return *this; 
+}
+
+inline bool CSSMutableStyleDeclaration::operator==(const CSSMutableStyleDeclaration& o)
+{
+    unsigned size1 = m_properties.size();
+        unsigned size2 = o.m_properties.size();
+
+    for (unsigned n1 = 0; n1 < size1; ++n1) {
+        const CSSProperty& prop1 = m_properties[n1];
+                bool found = false;
+                for (unsigned n2 = 0; n2 < size2; ++n2) {
+                        const CSSProperty& prop2 = m_properties[n2];
+                        if(prop1 == prop2) {
+                                found = true;
+                                break;
+                        }
+                }
+
+                if(!found)
+                        return false;
+        }
+
+        return true;
 }
 
 } // namespace WebCore

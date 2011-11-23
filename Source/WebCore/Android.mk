@@ -190,9 +190,11 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	dom/SelectorNodeList.cpp \
 	dom/ShadowRoot.cpp \
 	dom/SpaceSplitString.cpp \
+        dom/SSCNode.cpp \
 	dom/StaticHashSetNodeList.cpp \
 	dom/StaticNodeList.cpp \
 	dom/StringCallback.cpp \
+        dom/StyleCacheManager.cpp \
 	dom/StyleElement.cpp \
 	dom/StyledElement.cpp \
 	dom/TagNodeList.cpp \

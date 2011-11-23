@@ -2,6 +2,7 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -22,6 +23,7 @@
 #ifndef CSSFontFaceRule_h
 #define CSSFontFaceRule_h
 
+#include "CSSMutableStyleDeclaration.h"
 #include "CSSRule.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
@@ -51,6 +53,8 @@ public:
 
     virtual void addSubresourceStyleURLs(ListHashSet<KURL>& urls);
 
+    virtual bool operator==(const CSSRule& o);
+
 private:
     CSSFontFaceRule(CSSStyleSheet* parent);
 
@@ -61,6 +65,35 @@ private:
 
     RefPtr<CSSMutableStyleDeclaration> m_style;
 };
+
+inline bool CSSFontFaceRule::operator==(const CSSRule& o)
+{
+    if (type() != o.type())
+        return false;
+
+    const CSSFontFaceRule* rule = static_cast<const CSSFontFaceRule*>(&o);
+
+    if (m_style && rule->m_style) {
+        CSSMutableStyleDeclarationConstIterator c1 = m_style->begin();
+        CSSMutableStyleDeclarationConstIterator c2 = rule->m_style->begin();
+        while (c1 != m_style->end()) {
+            bool found = false;
+            while (c2 != rule->m_style->end()) {
+                if (*c1 == *c2) {
+                    found = true;
+                    break;
+                }
+                ++c2;
+            }
+            if(!found)
+                return false;
+            ++c1;
+        }
+    }
+
+    return true;
+}
+
 
 } // namespace WebCore
 
