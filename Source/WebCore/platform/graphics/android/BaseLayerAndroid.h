@@ -54,6 +54,15 @@ public:
 #endif
     void setContent(const android::PictureSet& src);
     void setExtra(SkPicture& extra);
+#if ENABLE(ACCELERATED_SCROLLING)
+    void setContentLoading(bool loading) { m_contentLoading = loading; }
+    bool contentLoading() { return m_contentLoading; }
+    void setEnableDraw(bool enable) { m_enableDraw = enable; }
+    bool enableDraw() { return m_enableDraw; }
+    void setNeedAlphaBlending(bool blend) { m_needAlphaBlending = blend; }
+    bool needAlphaBlending() { return m_needAlphaBlending; }
+#endif
+
     android::PictureSet* content() { return &m_content; }
     // This method will paint using the current PictureSet onto
     // the passed canvas. We used it to paint the GL tiles as well as
@@ -80,6 +89,12 @@ private:
     SkRect m_previousVisible;
 
     ScrollState m_scrollState;
+#if ENABLE(ACCELERATED_SCROLLING)
+    bool m_contentLoading;
+    bool m_enableDraw;
+    bool m_needAlphaBlending;
+#endif
+
 };
 
 } // namespace WebCore

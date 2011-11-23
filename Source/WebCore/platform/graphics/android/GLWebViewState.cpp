@@ -362,7 +362,7 @@ void GLWebViewState::resetLayersDirtyArea()
 
 double GLWebViewState::setupDrawing(IntRect& viewRect, SkRect& visibleRect,
                                   IntRect& webViewRect, int titleBarHeight,
-                                  IntRect& screenClip, float scale)
+                                  IntRect& screenClip, float scale, bool clear)
 {
     int left = viewRect.x();
     int top = viewRect.y();
@@ -379,7 +379,8 @@ double GLWebViewState::setupDrawing(IntRect& viewRect, SkRect& visibleRect,
                      (float)m_backgroundColor.green() / 255.0,
                      (float)m_backgroundColor.blue() / 255.0, 1);
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (clear)
+        glClear(GL_COLOR_BUFFER_BIT);
 
     glViewport(left, top, width, height);
 
@@ -472,7 +473,12 @@ bool GLWebViewState::drawGL(IntRect& rect, SkRect& viewport, IntRect* invalRect,
 
     // set up zoom manager, shaders, etc.
     m_backgroundColor = baseLayer->getBackgroundColor();
+#if ENABLE(GPU_ACCELERATED_SCROLLING)
+    bool enableDraw = baseLayer->enableDraw();
+    double currentTime = setupDrawing(rect, viewport, webViewRect, titleBarHeight, clip, scale, enableDraw);
+#else
     double currentTime = setupDrawing(rect, viewport, webViewRect, titleBarHeight, clip, scale);
+#endif
     ret |= baseLayer->drawGL(currentTime, compositedRoot, rect,
                                  viewport, scale, buffersSwappedPtr);
     m_glExtras.drawGL(webViewRect, viewport, titleBarHeight);
