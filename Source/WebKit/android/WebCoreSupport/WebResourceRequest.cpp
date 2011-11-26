@@ -1,5 +1,6 @@
 /*
  * Copyright 2010, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -102,6 +103,7 @@ WebResourceRequest::WebResourceRequest(const WebCore::ResourceRequest& resourceR
     m_userAgent = resourceRequest.httpUserAgent().utf8().data();
 
     m_url = resourceRequest.url().string().utf8().data();
+    m_type = resourceRequest.targetType();
 }
 
 } // namespace android
