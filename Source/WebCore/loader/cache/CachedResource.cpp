@@ -4,6 +4,7 @@
     Copyright (C) 2002 Waldo Bastian (bastian@kde.org)
     Copyright (C) 2006 Samuel Weinig (sam.weinig@gmail.com)
     Copyright (C) 2004, 2005, 2006, 2007, 2008 Apple Inc. All rights reserved.
+    Copyright (c) 2011, Code Aurora Forum. All rights reserved
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -43,6 +44,9 @@
 #include <wtf/RefCountedLeakCounter.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/Vector.h>
+
+extern void StatHubUrlRemovedFromMMCache(unsigned int hash);
+extern void StatHubUrlAddedToMMCache(unsigned int hash);
 
 using namespace WTF;
 
@@ -104,6 +108,7 @@ CachedResource::CachedResource(const String& url, Type type)
     , m_owningCachedResourceLoader(0)
     , m_resourceToRevalidate(0)
     , m_proxyResource(0)
+    , m_statHubHash(0)
 {
 #ifndef NDEBUG
     cachedResourceLeakCounter.increment();
@@ -166,6 +171,18 @@ void CachedResource::error(CachedResource::Status status)
 void CachedResource::finish()
 {
     m_status = Cached;
+}
+
+void CachedResource::setInCache(bool inCache) {
+    m_inCache = inCache;
+    if (m_statHubHash) {
+        if (m_inCache) {
+            StatHubUrlAddedToMMCache(m_statHubHash);
+        }
+        else {
+            StatHubUrlRemovedFromMMCache(m_statHubHash);
+        }
+    }
 }
 
 bool CachedResource::isExpired() const
