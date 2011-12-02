@@ -473,7 +473,7 @@ void TransferQueue::setTextureUploadType(TextureUploadType type)
     discardQueue();
 
     android::Mutex::Autolock lock(m_transferQueueItemLocks);
-    m_currentUploadType = type;
+    m_currentUploadType = CpuUpload; // force to cpu upload mode for now until gpu upload mode is fixed
     XLOGC("Now we set the upload to %s", m_currentUploadType == GpuUpload ? "GpuUpload" : "CpuUpload");
 }
 
