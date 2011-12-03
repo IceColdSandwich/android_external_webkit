@@ -69,6 +69,12 @@ BaseLayerAndroid::BaseLayerAndroid()
     : m_glWebViewState(0)
     , m_color(Color::white)
     , m_scrollState(NotScrolling)
+#if ENABLE(ACCELERATED_SCROLLING)
+    , m_contentLoading(false)
+    , m_enableDraw(false)
+    , m_needAlphaBlending(false)
+#endif
+
 #endif
 {
 #ifdef DEBUG_COUNT
@@ -305,7 +311,9 @@ bool BaseLayerAndroid::drawGL(double currentTime, LayerAndroid* compositedRoot,
 {
     bool needsRedraw = false;
 #if USE(ACCELERATED_COMPOSITING)
-
+#if ENABLE(GPU_ACCELERATED_SCROLLING)
+    if (m_enableDraw)
+#endif // GPU_ACCELERATED_SCROLLING
     needsRedraw = drawBasePictureInGL(visibleRect, scale, currentTime,
                                       buffersSwappedPtr);
 

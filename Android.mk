@@ -109,6 +109,8 @@ ifneq ($(HTTP_STACK),chrome)
   ENABLE_AUTOFILL = false
 endif
 
+WEBCORE_ACCELERATED_SCROLLING := true
+
 BASE_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -260,6 +262,16 @@ LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
 	external/chromium/chrome \
 	external/skia
 
+ifeq ($(WEBCORE_ACCELERATED_SCROLLING),true)
+LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
+	vendor/qcom/opensource/webkit/BackingStore
+endif
+
+ifeq ($(WEBCORE_FPS_DISPLAY),true)
+LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
+	vendor/qcom/opensource/webkit/BackingStore
+endif
+
 ifeq ($(JAVASCRIPT_ENGINE),v8)
 # Include WTF source file.
 d := Source/JavaScriptCore
@@ -354,6 +366,16 @@ endif
 
 ifeq ($(WEBCORE_INSTRUMENTATION),true)
 LOCAL_CFLAGS += -DANDROID_INSTRUMENT
+endif
+
+ifeq ($(WEBCORE_ACCELERATED_SCROLLING),true)
+LOCAL_CFLAGS += -DENABLE_ACCELERATED_SCROLLING
+LOCAL_CFLAGS += -DENABLE_GPU_ACCELERATED_SCROLLING
+LOCAL_CFLAGS += -DENABLE_GPU_ACCELERATED_SCROLLING2
+endif
+
+ifeq ($(WEBCORE_FPS_DISPLAY),true)
+LOCAL_CFLAGS += -DENABLE_FPS_DISPLAY
 endif
 
 # LOCAL_LDLIBS is used in simulator builds only and simulator builds are only

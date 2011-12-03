@@ -949,6 +949,17 @@ BaseLayerAndroid* WebViewCore::createBaseLayer(SkRegion* region)
 {
     BaseLayerAndroid* base = new BaseLayerAndroid();
     base->setContent(m_content);
+#if ENABLE(ACCELERATED_SCROLLING)
+    WebCore::FrameLoader* loader = m_mainFrame->loader();
+    bool loading = (!loader)? false : loader->isLoading();
+    base->setContentLoading(loading);
+    WebCore::FrameView* view = m_mainFrame->view();
+    if (view) {
+        WebCore::Color color = view->baseBackgroundColor();
+        if (color.alpha() == 0)
+            base->setNeedAlphaBlending(true);
+    }
+#endif
 
     if (!region->isEmpty()) {
         m_skipContentDraw = true;

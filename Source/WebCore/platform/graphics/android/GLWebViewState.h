@@ -206,7 +206,7 @@ public:
 
     double setupDrawing(IntRect& rect, SkRect& viewport, IntRect& webViewRect,
                 int titleBarHeight, IntRect& screenClip,
-                float scale);
+                float scale, bool clear = true);
 
     bool drawGL(IntRect& rect, SkRect& viewport, IntRect* invalRect,
                 IntRect& webViewRect, int titleBarHeight,
