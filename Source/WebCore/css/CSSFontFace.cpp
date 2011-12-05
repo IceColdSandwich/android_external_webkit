@@ -98,7 +98,7 @@ void CSSFontFace::fontLoaded(CSSFontFaceSource* source)
     fontSelector->fontLoaded();
 }
 
-SimpleFontData* CSSFontFace::getFontData(const FontDescription& fontDescription, bool syntheticBold, bool syntheticItalic)
+SimpleFontData* CSSFontFace::getFontData(const FontDescription& fontDescription, bool syntheticBold, bool syntheticItalic, bool woffEnabled)
 {
     m_activeSource = 0;
     if (!isValid())
@@ -109,7 +109,7 @@ SimpleFontData* CSSFontFace::getFontData(const FontDescription& fontDescription,
 
     size_t size = m_sources.size();
     for (size_t i = 0; i < size; ++i) {
-        if (SimpleFontData* result = m_sources[i]->getFontData(fontDescription, syntheticBold, syntheticItalic, fontSelector)) {
+        if (SimpleFontData* result = m_sources[i]->getFontData(fontDescription, syntheticBold, syntheticItalic, fontSelector, woffEnabled)) {
             m_activeSource = m_sources[i];
             return result;
         }

@@ -468,6 +468,9 @@ namespace WebCore {
         bool blockNetworkImage() const { return m_blockNetworkImage; }
 #endif
 
+        void setWOFFEnabled(bool);
+        bool woffEnabled() const { return m_woffEnabled; }
+
     private:
         Page* m_page;
 
@@ -588,6 +591,7 @@ namespace WebCore {
         bool m_useQuickLookResourceCachingQuirks : 1;
         bool m_forceCompositingMode : 1;
         bool m_shouldInjectUserScriptsInInitialEmptyDocument : 1;
+        bool m_woffEnabled : 1;
 #ifdef ANDROID_META_SUPPORT
         // default is yes
         bool m_viewport_user_scalable : 1;

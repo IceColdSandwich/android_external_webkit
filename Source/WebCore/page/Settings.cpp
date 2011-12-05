@@ -931,4 +931,9 @@ void Settings::setTiledBackingStoreEnabled(bool enabled)
 #endif
 }
 
+void Settings::setWOFFEnabled(bool enabled)
+{
+    m_woffEnabled = enabled;
+}
+
 } // namespace WebCore

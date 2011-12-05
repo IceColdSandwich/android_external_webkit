@@ -158,6 +158,7 @@ LOCAL_C_INCLUDES := \
 	external/skia/include/utils \
 	external/skia/src/ports \
 	external/sqlite/dist \
+	external/zlib \
 	frameworks/base/core/jni/android/graphics \
 	frameworks/base/include
 
@@ -397,7 +398,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libmedia \
 	libEGL \
 	libGLESv2 \
-	libgui
+	libgui \
+	libz
 
 ifeq ($(PLATFORM_VERSION),3.1.4.1.5.9.2.6.5)
 LOCAL_SHARED_LIBRARIES += libsurfaceflinger_client

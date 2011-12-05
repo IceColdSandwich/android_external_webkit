@@ -558,8 +558,11 @@ FontData* CSSFontSelector::getFontData(const FontDescription& fontDescription, c
             face->appendFontFace(candidateFontFaces[i]);
     }
 
+    Settings* settings = m_document ? m_document->frame() ? m_document->frame()->settings() : 0 : 0;
+    bool woffEnabled = settings && settings->woffEnabled();
+
     // We have a face.  Ask it for a font data.  If it cannot produce one, it will fail, and the OS will take over.
-    return face->getFontData(fontDescription);
+    return face->getFontData(fontDescription, woffEnabled);
 }
 
 }

@@ -29,6 +29,7 @@
 #include "SkTypeface.h"
 #include "SkStream.h"
 #include "SharedBuffer.h"
+#include "WOFFFileFormat.h"
 #include "FontPlatformData.h"
 
 namespace WebCore {
@@ -57,8 +58,18 @@ FontPlatformData FontCustomPlatformData::fontPlatformData(int size, bool bold, b
     return FontPlatformData(m_typeface, size, bold, italic);
 }
 
-FontCustomPlatformData* createFontCustomPlatformData(SharedBuffer* buffer)
+FontCustomPlatformData* createFontCustomPlatformData(SharedBuffer* buffer, bool woffEnabled)
 {
+    RefPtr<SharedBuffer> sfntBuffer;
+    if (woffEnabled && isWOFF(buffer)) {
+        Vector<char> sfnt;
+        if (!convertWOFFToSfnt(buffer, sfnt))
+            return 0;
+
+        sfntBuffer = SharedBuffer::adoptVector(sfnt);
+        buffer = sfntBuffer.get();
+    }
+
     // pass true until we know how we can share the data, and not have to
     // make a copy of it.
     SkStream* stream = new SkMemoryStream(buffer->data(), buffer->size(), true);
@@ -78,11 +89,7 @@ FontCustomPlatformData* createFontCustomPlatformData(SharedBuffer* buffer)
 
 bool FontCustomPlatformData::supportsFormat(const String& format)
 {
-    return equalIgnoringCase(format, "truetype") || equalIgnoringCase(format, "opentype")
-#if ENABLE(OPENTYPE_SANITIZER)
-        || equalIgnoringCase(format, "woff")
-#endif
-    ;
+    return equalIgnoringCase(format, "truetype") || equalIgnoringCase(format, "opentype") || equalIgnoringCase(format, "woff");
 }
 
 }
