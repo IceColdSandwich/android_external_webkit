@@ -178,6 +178,7 @@ MediaPlayerPrivate::MediaPlayerPrivate(MediaPlayer* player)
     m_poster(0),
     m_naturalSize(100, 100),
     m_naturalSizeUnknown(true),
+    m_durationUnknown(true),
     m_isVisible(false),
     m_videoLayer(new VideoLayerAndroid())
 {
@@ -254,6 +255,30 @@ public:
 
         checkException(env);
     }
+
+    void updateSizeAndDuration(int duration, int width, int height)
+    {
+        if (duration > 0 && m_durationUnknown) {
+            m_duration = duration / 1000.0f;
+            m_durationUnknown = false;
+            m_player->durationChanged();
+        } else if (m_durationUnknown) {
+            // If the duration is unknown, Android Media Player returns 0,
+            // The duration should be set to positive infinity
+            // according to the HTML5 video spec in this case
+            m_duration = std::numeric_limits<float>::infinity();
+            m_player->durationChanged();
+        }
+
+        if (width != 0 && height != 0 && m_naturalSizeUnknown) {
+            m_naturalSize = IntSize(width, height);
+            m_naturalSizeUnknown = false;
+            m_player->sizeChanged();
+            TilesManager::instance()->videoLayerManager()->updateVideoLayerSize(
+                m_player->platformLayer()->uniqueId(), width*height);
+        }
+    }
+
     bool canLoadPoster() const { return true; }
     void setPoster(const String& url)
     {
@@ -307,17 +332,6 @@ public:
             m_naturalSize = IntSize(poster->width(), poster->height());
             m_player->sizeChanged();
         }
-    }
-
-    void onPrepared(int duration, int width, int height)
-    {
-        m_duration = duration / 1000.0f;
-        m_naturalSize = IntSize(width, height);
-        m_naturalSizeUnknown = false;
-        m_player->durationChanged();
-        m_player->sizeChanged();
-        TilesManager::instance()->videoLayerManager()->updateVideoLayerSize(
-            m_player->platformLayer()->uniqueId(), width*height);
     }
 
     virtual bool hasAudio() const { return false; } // do not display the audio UI
@@ -515,7 +529,7 @@ public:
         checkException(env);
     }
 
-    void onPrepared(int duration, int width, int height)
+    void updateSizeAndDuration(int duration, int width, int height)
     {
         // Android media player gives us a duration of 0 for a live
         // stream, so in that case set the real duration to infinity.
@@ -548,7 +562,15 @@ static void OnPrepared(JNIEnv* env, jobject obj, int duration, int width, int he
 {
     if (pointer) {
         WebCore::MediaPlayerPrivate* player = reinterpret_cast<WebCore::MediaPlayerPrivate*>(pointer);
-        player->onPrepared(duration, width, height);
+        player->updateSizeAndDuration(duration, width, height);
+    }
+}
+
+static void OnSizeChanged(JNIEnv* env, jobject obj, int duration, int width, int height, int pointer)
+{
+    if (pointer) {
+        WebCore::MediaPlayerPrivate* player = reinterpret_cast<WebCore::MediaPlayerPrivate*>(pointer);
+        player->updateSizeAndDuration(duration, width, height);
     }
 }
 
@@ -650,6 +672,8 @@ static void OnStopFullscreen(JNIEnv* env, jobject obj, int pointer)
 static JNINativeMethod g_MediaPlayerMethods[] = {
     { "nativeOnPrepared", "(IIII)V",
         (void*) OnPrepared },
+    { "nativeOnSizeChanged", "(IIII)V",
+        (void*) OnSizeChanged },
     { "nativeOnEnded", "(I)V",
         (void*) OnEnded },
     { "nativeOnStopFullscreen", "(I)V",
