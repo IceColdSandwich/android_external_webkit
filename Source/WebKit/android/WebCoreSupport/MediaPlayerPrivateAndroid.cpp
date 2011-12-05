@@ -62,6 +62,7 @@ struct MediaPlayerPrivate::JavaGlue {
     jmethodID m_teardown;
     jmethodID m_seek;
     jmethodID m_pause;
+    jmethodID m_setVolume;
     // Audio
     jmethodID m_newInstance;
     jmethodID m_setDataSource;
@@ -109,6 +110,29 @@ void MediaPlayerPrivate::pause()
     env->CallVoidMethod(m_glue->m_javaProxy, m_glue->m_pause);
     checkException(env);
 }
+
+void MediaPlayerPrivate::setVolume(float volume)
+{
+    float newVolume = volume;
+
+    if (volume < 0.0f)
+        newVolume = 0.0f;
+
+    if (volume > 1.0f)
+        newVolume = 1.0f;
+
+    JNIEnv* env = JSC::Bindings::getJNIEnv();
+    if (!env || !m_glue->m_javaProxy)
+        return;
+
+    env->CallVoidMethod(m_glue->m_javaProxy, m_glue->m_setVolume, newVolume);
+
+    if (!m_player->muted() && (newVolume != m_player->volume()))
+        m_player->volumeChanged(newVolume);
+
+    checkException(env);
+}
+
 
 void MediaPlayerPrivate::setVisible(bool visible)
 {
@@ -319,6 +343,7 @@ public:
         m_glue->m_teardown = env->GetMethodID(clazz, "teardown", "()V");
         m_glue->m_seek = env->GetMethodID(clazz, "seek", "(I)V");
         m_glue->m_pause = env->GetMethodID(clazz, "pause", "()V");
+        m_glue->m_setVolume = env->GetMethodID(clazz, "setVolume", "(F)V");
         m_glue->m_javaProxy = 0;
         env->DeleteLocalRef(clazz);
         // An exception is raised if any of the above fails.
@@ -448,6 +473,7 @@ public:
         m_glue->m_teardown = env->GetMethodID(clazz, "teardown", "()V");
         m_glue->m_seek = env->GetMethodID(clazz, "seek", "(I)V");
         m_glue->m_pause = env->GetMethodID(clazz, "pause", "()V");
+        m_glue->m_setVolume = env->GetMethodID(clazz, "setVolume", "(F)V");
         m_glue->m_javaProxy = 0;
         env->DeleteLocalRef(clazz);
         // An exception is raised if any of the above fails.

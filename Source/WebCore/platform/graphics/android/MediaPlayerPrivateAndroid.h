@@ -67,7 +67,7 @@ public:
     virtual void setRate(float) { }
     virtual bool paused() const { return m_paused; }
 
-    virtual void setVolume(float) { }
+    virtual void setVolume(float);
 
     virtual MediaPlayer::NetworkState networkState() const { return m_networkState; }
     virtual MediaPlayer::ReadyState readyState() const { return m_readyState; }
