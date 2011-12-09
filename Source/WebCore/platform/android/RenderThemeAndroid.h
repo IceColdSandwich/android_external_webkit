@@ -81,7 +81,6 @@ protected:
 #if ENABLE(VIDEO)
     virtual String extraMediaControlsStyleSheet();
     virtual void adjustSliderThumbSize(RenderObject* o) const;
-    virtual bool shouldRenderMediaControlPart(ControlPart part, Element* e);
     virtual bool paintMediaFullscreenButton(RenderObject* o, const PaintInfo& paintInfo, const IntRect& r);
     virtual bool paintMediaMuteButton(RenderObject* o, const PaintInfo& paintInfo, const IntRect& r);
     virtual bool paintMediaPlayButton(RenderObject* o, const PaintInfo& paintInfo, const IntRect& r);
