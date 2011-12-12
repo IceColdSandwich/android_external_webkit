@@ -978,12 +978,19 @@ void CanvasRenderingContext2D::clearRect(float x, float y, float width, float he
 {
     if (!validateRectForCanvas(x, y, width, height))
         return;
+    FloatRect rect(x, y, width, height);
+#if PLATFORM(ANDROID)
+    canvas()->clearRecording(rect);
+#endif
     GraphicsContext* context = drawingContext();
     if (!context)
         return;
     if (!state().m_invertibleCTM)
         return;
-    FloatRect rect(x, y, width, height);
+
+#if PLATFORM(ANDROID)
+    context->setCurrentTransform(state().m_transform);
+#endif
 
     save();
     setAllAttributesToDefault();

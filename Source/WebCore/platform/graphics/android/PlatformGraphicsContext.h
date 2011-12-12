@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,18 +38,18 @@ class SkCanvas;
 
 class Container {
 public:
-    Container(WebCore::Node* node, const WebCore::IntRect& r) 
+    Container(WebCore::Node* node, const WebCore::IntRect& r)
         : m_node(node), m_rect(r), m_state(WebCore::RenderSkinAndroid::kDisabled)
-    { 
-        m_picture = new SkPicture; 
-    }
-    
-    ~Container() 
-    { 
-        m_picture->unref(); 
+    {
+        m_picture = new SkPicture;
     }
 
-    Container& operator=(const Container& src) 
+    ~Container()
+    {
+        m_picture->unref();
+    }
+
+    Container& operator=(const Container& src)
     {
         if (this != &src) {
             m_node = src.m_node;
@@ -61,9 +62,9 @@ public:
         }
         return *this;
     }
-    
-    Container(const Container& src) 
-    { 
+
+    Container(const Container& src)
+    {
         m_node = src.m_node;
         m_picture = src.m_picture;
         m_picture->ref();
@@ -80,7 +81,7 @@ public:
     {
         return m_picture->getRefCnt() == 1;
     }
-    
+
     bool matches(const WebCore::Node* match) { return m_node == match; }
 
     const WebCore::Node* node() const { return m_node; }
@@ -97,12 +98,12 @@ public:
     void setRect(WebCore::IntRect r)
     {
         if (m_rect != r) {
-            m_rect = r; 
+            m_rect = r;
             m_state = WebCore::RenderSkinAndroid::kDisabled;
         }
     }
-    
-    // Update the focus state of this button, depending on whether it 
+
+    // Update the focus state of this button, depending on whether it
     // corresponds to the focused node passed in.  If its state has changed,
     // re-record to the subpicture, so the master picture will reflect the
     // change.
@@ -129,7 +130,7 @@ private:
     // The rectangle representing the bounds of the button.
     WebCore::IntRect                    m_rect;
     // An SkPicture that, thanks to storeButtonInfo, is pointed to by the master
-    // picture, so that we can rerecord this button without rerecording the 
+    // picture, so that we can rerecord this button without rerecording the
     // world.
     SkPicture*                          m_picture;
     // The state of the button - Currently kFocused or kNormal (and kDisabled
@@ -140,25 +141,55 @@ private:
 namespace WebCore {
 
     class GraphicsContext;
-    
+
 class PlatformGraphicsContext {
 public:
     PlatformGraphicsContext();
-    // Pass in a recording canvas, and an array of button information to be 
+    // Pass in a recording canvas, and an array of button information to be
     // updated.
     PlatformGraphicsContext(SkCanvas* canvas, WTF::Vector<Container>* buttons);
+    // Create a recording canvas
+    PlatformGraphicsContext(int width, int height);
     ~PlatformGraphicsContext();
-    
-    SkCanvas*                   mCanvas;
-    
+
+    SkCanvas* mCanvas;
+
     bool deleteUs() const { return m_deleteCanvas; }
     // If our graphicscontext has a button list, add a new container for the
     // nod/rect, and record a new subpicture for this node/button in the current
     // mCanvas
     void storeButtonInfo(Node* node, const IntRect& r);
+
+    void convertToNonRecording();
+    void clearRecording();
+    SkPicture* getRecordingPicture() const { return m_picture; }
+
+    // When we detect animation we switch to the recording canvas for better
+    // performance. If JS tries to access the pixels of the canvas, the
+    // recording canvas becomes tainted and must be converted back to a bitmap
+    // backed canvas.
+    // CanvasState represents a directed acyclic graph:
+    // DEFAULT ----> ANIMATION_DETECTED ----> RECORDING ----> DIRTY
+    enum CanvasState {
+        DEFAULT, // SkBitmap backed
+        ANIMATION_DETECTED, // JavaScript clearRect of canvas is occuring at a high enough rate SkBitmap backed
+        RECORDING, // SkPicture backed
+        DIRTY // A pixel readback occured; convert to SkBitmap backed.
+    };
+
+    bool isDefault() const { return m_canvasState == DEFAULT; }
+    bool isAnimating() const { return m_canvasState == ANIMATION_DETECTED; }
+    bool isRecording() const { return m_canvasState == RECORDING; }
+    bool isDirty() const { return m_canvasState == DIRTY; }
+
+    void setIsAnimating();
+
 private:
-    bool                     m_deleteCanvas;
-    WTF::Vector<Container>*    m_buttons;
+    bool m_deleteCanvas;
+    WTF::Vector<Container>* m_buttons;
+    enum CanvasState m_canvasState;
+
+    SkPicture* m_picture;
 };
 
 }

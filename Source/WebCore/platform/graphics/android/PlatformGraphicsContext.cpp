@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,29 +24,69 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define LOG_TAG "PlatformGraphicsContext"
+
 #include "config.h"
 #include "Node.h"
 #include "PlatformGraphicsContext.h"
 #include "SkCanvas.h"
+#include <utils/Log.h>
 
 namespace WebCore {
 
 PlatformGraphicsContext::PlatformGraphicsContext(SkCanvas* canvas, WTF::Vector<Container>* buttons)
-        : mCanvas(canvas), m_deleteCanvas(false), m_buttons(buttons)
+    : mCanvas(canvas)
+    , m_deleteCanvas(false)
+    , m_buttons(buttons)
+    , m_canvasState(DEFAULT)
+    , m_picture(0)
 {
 }
 
 PlatformGraphicsContext::PlatformGraphicsContext()
-        : mCanvas(new SkCanvas), m_deleteCanvas(true), m_buttons(0)
+    : mCanvas(new SkCanvas)
+    , m_deleteCanvas(true)
+    , m_buttons(0)
+    , m_canvasState(DEFAULT)
+    , m_picture(0)
 {
+}
+
+PlatformGraphicsContext::PlatformGraphicsContext(int width, int height)
+    : m_deleteCanvas(false)
+    , m_buttons(0)
+    , m_canvasState(RECORDING)
+    , m_picture(new SkPicture)
+{
+    mCanvas = m_picture->beginRecording(width, height, 0);
 }
 
 PlatformGraphicsContext::~PlatformGraphicsContext()
 {
-    if (m_deleteCanvas) {
-//        printf("-------------------- deleting offscreen canvas\n");
-        delete mCanvas;
+    if (m_picture) {
+        delete m_picture; // The SkPicture will free mCanvas in its destructor.
+        m_picture = 0;
+        return;
     }
+
+    if (m_deleteCanvas) {
+        delete mCanvas;
+        mCanvas = 0;
+    }
+}
+
+void PlatformGraphicsContext::clearRecording()
+{
+    if (!isRecording() || !m_picture)
+        return;
+
+    int width = m_picture->width();
+    int height = m_picture->height();
+
+    delete m_picture;
+    m_picture = new SkPicture;
+
+    mCanvas = m_picture->beginRecording(width, height, 0);
 }
 
 void PlatformGraphicsContext::storeButtonInfo(Node* node, const IntRect& r)
@@ -69,6 +110,40 @@ void PlatformGraphicsContext::storeButtonInfo(Node* node, const IntRect& r)
     mCanvas->drawPicture(*(container.picture()));
     // Keep track of the information about the button.
     m_buttons->append(container);
+}
+
+void PlatformGraphicsContext::convertToNonRecording()
+{
+    if (!isRecording() || !m_picture)
+        return;
+
+    SkBitmap bitmap;
+
+    bitmap.setConfig(SkBitmap::kARGB_8888_Config, m_picture->width(), m_picture->height());
+    bitmap.allocPixels();
+    bitmap.eraseColor(0);
+
+    SkCanvas* canvas = new SkCanvas;
+    canvas->setBitmapDevice(bitmap);
+
+    m_picture->draw(canvas);
+
+    mCanvas = canvas;
+    m_deleteCanvas = true;
+
+    delete m_picture;
+    m_picture = 0;
+
+    SLOGD("[%s] The HTML5 recording canvas has been tainted. Converting to bitmap buffer.", __FUNCTION__);
+    m_canvasState = DIRTY;
+}
+
+void PlatformGraphicsContext::setIsAnimating()
+{
+    if (!m_canvasState == DEFAULT)
+        return;
+
+    m_canvasState = ANIMATION_DETECTED;
 }
 
 }   // WebCore

@@ -22,10 +22,12 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "config.h"
 #include "GraphicsContext.h"
 
 #include "AffineTransform.h"
+#include "AnimationTimeCounter.h"
 #include "Gradient.h"
 #include "NotImplemented.h"
 #include "Path.h"
@@ -254,6 +256,28 @@ public:
         m_state = static_cast<State*>(m_stateStack.back());
     }
 
+    void setState(const State* state)
+    {
+        State* newState = static_cast<State*>(m_stateStack.push_back());
+        new (newState) State(*state);
+    }
+
+    SkDeque& getStateStack()
+    {
+        return m_stateStack;
+    }
+
+    void setStateStack(SkDeque& stateStack)
+    {
+        while (stateStack.count() > 0)
+        {
+            State* copyState = static_cast<State*>(stateStack.back());
+            State* newState = static_cast<State*>(m_stateStack.push_back());
+            new (newState) State(*copyState);
+            stateStack.pop_back();
+        }
+    }
+
     void setFillColor(const Color& c)
     {
         m_state->fillColor = c.rgb();
@@ -480,6 +504,13 @@ GraphicsContext* GraphicsContext::createOffscreenContext(int width, int height)
     return ctx;
 }
 
+GraphicsContext* GraphicsContext::createOffscreenRecordingContext(int width, int height)
+{
+    PlatformGraphicsContext* pgc = new PlatformGraphicsContext(width, height);
+    GraphicsContext* ctx = new GraphicsContext(pgc);
+    return ctx;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 void GraphicsContext::platformInit(PlatformGraphicsContext* gc)
@@ -491,6 +522,25 @@ void GraphicsContext::platformInit(PlatformGraphicsContext* gc)
 void GraphicsContext::platformDestroy()
 {
     delete m_data;
+}
+
+void GraphicsContext::copyState(GraphicsContext* context)
+{
+    GraphicsContextPlatformPrivate::State* copyState = context->m_data->getState();
+    m_data->setState(copyState);
+    m_data->setStateStack(context->m_data->getStateStack());
+}
+
+void GraphicsContext::setCurrentTransform(AffineTransform& transform)
+{
+    m_currentTransform = transform;
+    if(!(m_data->getPlatformGfxCtx()->isRecording()))
+        return;
+
+    SkRect bounds;
+    bounds.set(0, 0, GC2CANVAS(this)->getDevice()->width(), GC2CANVAS(this)->getDevice()->height());
+    GC2CANVAS(this)->clipRect(bounds);
+    concatCTM(m_currentTransform);
 }
 
 void GraphicsContext::savePlatformState()
@@ -1032,6 +1082,16 @@ void GraphicsContext::clearRect(const FloatRect& rect)
     if (paintingDisabled())
         return;
 
+    FloatRect recordingRect(0, 0, GC2CANVAS(this)->getDevice()->width(), GC2CANVAS(this)->getDevice()->height());
+    if (rect == recordingRect && !m_data->getPlatformGfxCtx()->isAnimating()) {
+        m_animationTimeCounter->tick();
+
+        // We are making an assumption that if the entire canvas is being
+        // cleared at a certain frame rate, it is because we are animating.
+        if (m_data->getPlatformGfxCtx()->isDefault() && m_animationTimeCounter->isAnimating())
+            m_data->getPlatformGfxCtx()->setIsAnimating();
+    }
+
     SkPaint paint;
 
     m_data->setupPaintFill(&paint);
@@ -1238,6 +1298,11 @@ void GraphicsContext::fillPath(const Path& pathToFill)
 
 void GraphicsContext::strokePath(const Path& pathToStroke)
 {
+    // Stroke path seems to require access to the pixels of the canvas for
+    // sampling. Convert to a bitmap backed SkCanvas.
+    if (m_data && m_data->getPlatformGfxCtx()->isRecording())
+        m_data->getPlatformGfxCtx()->convertToNonRecording();
+
     const SkPath* path = pathToStroke.platformPath();
     if (paintingDisabled() || !path)
         return;
