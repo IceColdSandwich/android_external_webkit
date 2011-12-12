@@ -261,6 +261,14 @@ private:
 
     Color m_backgroundColor;
 
+    double m_current_time;
+    double m_start_time;
+    double m_total_time;
+    long m_iterations;
+    float m_avg_fps;
+    bool m_start;
+    int m_counter_test;
+
 #ifdef MEASURES_PERF
     unsigned int m_totalTimeCounter;
     int m_timeCounter;

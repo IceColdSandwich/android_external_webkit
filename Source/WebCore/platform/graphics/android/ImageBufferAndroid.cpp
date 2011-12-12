@@ -42,6 +42,7 @@
 #include "SkStream.h"
 #include "SkUnPreMultiply.h"
 #include "android_graphics.h"
+#include "CanvasLayerAndroid.h"
 
 using namespace std;
 
@@ -110,6 +111,25 @@ void ImageBuffer::clearRecording() const
         return;
 
     context()->platformContext()->clearRecording();
+}
+
+bool ImageBuffer::canUseGpuRendering()
+{
+    SkPicture* canvasRecording = context()->platformContext()->getRecordingPicture();
+    if(canvasRecording != NULL)
+        return canvasRecording->canUseGpuRendering();
+    else
+        return false;
+}
+
+void ImageBuffer::copyRecordingToLayer( GraphicsContext* paintContext, const IntRect& r,
+                                        CanvasLayerAndroid* canvasLayer) const
+{
+    SkPicture* canvasRecording = context()->platformContext()->getRecordingPicture();
+    SkPicture dstPicture(*canvasRecording);
+    canvasLayer->setPicture(dstPicture);
+    canvasLayer->setRect(r);
+    clearRecording();
 }
 
 void ImageBuffer::copyRecordingToCanvas(GraphicsContext* paintContext, const IntRect& r) const

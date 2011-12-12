@@ -36,6 +36,7 @@
 #include "SkPath.h"
 #include "TilesManager.h"
 #include "TilesTracker.h"
+#include "CanvasLayerAndroid.h"
 #include <wtf/CurrentTime.h>
 
 #include <cutils/log.h>
@@ -87,6 +88,12 @@ GLWebViewState::GLWebViewState(android::Mutex* buttonMutex)
     , m_expandedTileBoundsX(0)
     , m_expandedTileBoundsY(0)
     , m_scale(1)
+    , m_current_time(0.0f)
+    , m_start_time(0.0f)
+    , m_total_time(0.0f)
+    , m_iterations(0)
+    , m_avg_fps(0.0f)
+    , m_start(true)
 {
     m_viewport.setEmpty();
     m_futureViewportTileBounds.setEmpty();
@@ -408,6 +415,27 @@ bool GLWebViewState::drawGL(IntRect& rect, SkRect& viewport, IntRect* invalRect,
                             IntRect& webViewRect, int titleBarHeight,
                             IntRect& clip, float scale, bool* buffersSwappedPtr)
 {
+    if(m_start)
+    {
+        m_start_time = currentTime();
+        m_current_time = currentTime();
+        m_total_time = 0;
+        m_iterations = 0;
+        m_avg_fps = 0;
+        m_counter_test = 0;
+        m_start = false;
+    }
+    else{
+        m_current_time = currentTime();
+        m_total_time = m_current_time - m_start_time;
+        ++m_iterations;
+        if(m_total_time > 15)
+        {
+            ++m_counter_test;
+            m_avg_fps = m_iterations/m_total_time;
+        }
+    }
+
     m_scale = scale;
     TilesManager::instance()->getProfiler()->nextFrame(viewport.fLeft,
                                                        viewport.fTop,
@@ -425,7 +453,10 @@ bool GLWebViewState::drawGL(IntRect& rect, SkRect& viewport, IntRect* invalRect,
     SkSafeRef(baseLayer);
     m_baseLayerLock.unlock();
     if (!baseLayer)
+    {
+        CanvasLayerAndroid::cleanupAssets();
          return false;
+    }
 
     float viewWidth = (viewport.fRight - viewport.fLeft) * TILE_PREFETCH_RATIO;
     float viewHeight = (viewport.fBottom - viewport.fTop) * TILE_PREFETCH_RATIO;
@@ -545,6 +576,9 @@ bool GLWebViewState::drawGL(IntRect& rect, SkRect& viewport, IntRect* invalRect,
     TilesManager::instance()->getTilesTracker()->showTrackTextures();
     ImagesManager::instance()->showImages();
 #endif
+
+    CanvasLayerAndroid::cleanupAssets();
+
     return ret;
 }
 
