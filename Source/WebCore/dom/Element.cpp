@@ -957,7 +957,7 @@ void Element::insertedIntoDocument()
     }
 
     char value[PROPERTY_VALUE_MAX] = {'\0'};
-    property_get("net.webkit.stylecache", value, "1");
+    property_get("net.webkit.stylecache", value, "0");
     int stylecache = (unsigned)atoi(value);
 
     if(stylecache == 0)
