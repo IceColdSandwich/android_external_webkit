@@ -210,8 +210,6 @@ public:
     // triggering a load. We should make it protected again if we can find a
     // better way to handle the archive case.
     bool makePurgeable(bool purgeable);
-    
-    void SetStatHubHash(unsigned int hash) {m_statHubHash = hash;}
 
     // HTTP revalidation support methods for CachedResourceLoader.
     void setResourceToRevalidate(CachedResource*);

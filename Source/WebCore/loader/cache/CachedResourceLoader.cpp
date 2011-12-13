@@ -54,18 +54,22 @@
 
 #define PRELOAD_DEBUG 0
 
-extern unsigned int StatHubUpdateSubUrl(const char* main_url, const char* sub_url);
+#if USE(CHROME_NETWORK_STACK)
+    #include <StatHubCmdApi.h>
+#endif //  USE(CHROME_NETWORK_STACK)
 
 namespace WebCore {
 
 static void SaveSubURL(CachedResourceLoader* cachedResourceLoader, CachedResource* resource) {
+#if USE(CHROME_NETWORK_STACK)
     if (NULL != resource && NULL!=cachedResourceLoader) {
         unsigned short main_url_len = cachedResourceLoader->document()->url().string().length();
         unsigned short sub_url_len = resource->url().length();
         if (sub_url_len && main_url_len && cachedResourceLoader->document()->url().protocolInHTTPFamily() && KURL(ParsedURLString,resource->url()).protocolInHTTPFamily()) {
-            resource->SetStatHubHash(StatHubUpdateSubUrl(cachedResourceLoader->document()->url().string().latin1().data(), resource->url().latin1().data()));
+            StatHubUpdateSubUrl(cachedResourceLoader->document()->url().string().latin1().data(), resource->url().latin1().data());
         }
     }
+#endif //  USE(CHROME_NETWORK_STACK)
 }
 
 static CachedResource* createResource(CachedResource::Type type, const KURL& url, const String& charset)
@@ -360,6 +364,8 @@ CachedResource* CachedResourceLoader::requestResource(CachedResource::Type type,
     if (!resource)
         return 0;
 
+    SaveSubURL(this, resource);
+
     ASSERT(resource->url() == url.string());
     m_documentResources.set(resource->url(), resource);
     
@@ -422,8 +428,6 @@ CachedResource* CachedResourceLoader::loadResource(CachedResource::Type type, co
             delete resource;
         return 0;
     }
-
-    SaveSubURL(this, resource);
 
     m_validatedURLs.add(url.string());
     return resource;

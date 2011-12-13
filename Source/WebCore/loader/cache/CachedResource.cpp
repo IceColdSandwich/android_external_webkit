@@ -44,9 +44,11 @@
 #include <wtf/RefCountedLeakCounter.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/Vector.h>
+#include <wtf/text/CString.h>
 
-extern void StatHubUrlRemovedFromMMCache(unsigned int hash);
-extern void StatHubUrlAddedToMMCache(unsigned int hash);
+#if USE(CHROME_NETWORK_STACK)
+    #include <StatHubCmdApi.h>
+#endif //  USE(CHROME_NETWORK_STACK)
 
 using namespace WTF;
 
@@ -108,11 +110,13 @@ CachedResource::CachedResource(const String& url, Type type)
     , m_owningCachedResourceLoader(0)
     , m_resourceToRevalidate(0)
     , m_proxyResource(0)
-    , m_statHubHash(0)
 {
 #ifndef NDEBUG
     cachedResourceLeakCounter.increment();
 #endif
+#if USE(CHROME_NETWORK_STACK)
+    m_statHubHash = StatHubHash(url.latin1().data());
+#endif //  USE(CHROME_NETWORK_STACK)
 }
 
 CachedResource::~CachedResource()
@@ -171,18 +175,20 @@ void CachedResource::error(CachedResource::Status status)
 void CachedResource::finish()
 {
     m_status = Cached;
+#if USE(CHROME_NETWORK_STACK)
+    if (m_statHubHash) {
+        StatHubCmd(INPUT_CMD_WK_RES_LOAD_FINISHED, (void*)m_statHubHash, 0, (void*)canUseCacheValidator(), 0);
+    }
+#endif //  USE(CHROME_NETWORK_STACK)
 }
 
 void CachedResource::setInCache(bool inCache) {
     m_inCache = inCache;
+#if USE(CHROME_NETWORK_STACK)
     if (m_statHubHash) {
-        if (m_inCache) {
-            StatHubUrlAddedToMMCache(m_statHubHash);
-        }
-        else {
-            StatHubUrlRemovedFromMMCache(m_statHubHash);
-        }
+        StatHubCmd(INPUT_CMD_WK_RES_MMC_STATUS, (void*)m_statHubHash, 0, (void*)m_inCache, 0);
     }
+#endif //  USE(CHROME_NETWORK_STACK)
 }
 
 bool CachedResource::isExpired() const

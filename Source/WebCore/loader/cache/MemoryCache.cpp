@@ -43,8 +43,9 @@
 #include <wtf/CurrentTime.h>
 #include <wtf/text/CString.h>
 
-#define URL_ACTION_NOTIFY_CLEAR     6
-extern void StatHubCmd(unsigned short cmd, const char* param1, const char* param2);
+#if USE(CHROME_NETWORK_STACK)
+    #include <StatHubCmdApi.h>
+#endif //  USE(CHROME_NETWORK_STACK)
 
 using namespace std;
 
@@ -640,7 +641,9 @@ MemoryCache::Statistics MemoryCache::getStatistics()
 
 void MemoryCache::setDisabled(bool disabled)
 {
-    StatHubCmd((unsigned short)URL_ACTION_NOTIFY_CLEAR, "", "");
+#if USE(CHROME_NETWORK_STACK)
+    StatHubCmd(INPUT_CMD_WK_MMC_CLEAR, NULL, 0, NULL, 0);
+#endif //  USE(CHROME_NETWORK_STACK)
 
     m_disabled = disabled;
     if (!m_disabled)

@@ -237,7 +237,9 @@ using namespace std;
 using namespace WTF;
 using namespace Unicode;
 
-extern void StatHubUpdateMainUrl(const char* main_url);
+#if USE(CHROME_NETWORK_STACK)
+    #include <StatHubCmdApi.h>
+#endif //  USE(CHROME_NETWORK_STACK)
 
 namespace WebCore {
 
@@ -2317,11 +2319,13 @@ void Document::logExceptionToConsole(const String& errorMessage, int lineNumber,
 
 static void updateDocumentUrl(const KURL& url) {
 
+#if USE(CHROME_NETWORK_STACK)
     unsigned short main_url_len = url.string().length();
 
     if (main_url_len && url.protocolInHTTPFamily()) {
         StatHubUpdateMainUrl(url.string().latin1().data());
     }
+#endif //  USE(CHROME_NETWORK_STACK)
 }
 
 void Document::setURL(const KURL& url)
