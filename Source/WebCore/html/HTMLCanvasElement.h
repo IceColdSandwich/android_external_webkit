@@ -98,6 +98,9 @@ public:
     void didDraw(const FloatRect&);
 
     void paint(GraphicsContext*, const IntRect&);
+#if PLATFORM(ANDROID)
+    void clearRecording(const FloatRect& rect);
+#endif
 
     GraphicsContext* drawingContext() const;
 
@@ -177,6 +180,9 @@ private:
     
     mutable RefPtr<Image> m_presentedImage;
     mutable RefPtr<Image> m_copiedImage; // FIXME: This is temporary for platforms that have to copy the image buffer to render (and for CSSCanvasValue).
+#if PLATFORM(ANDROID)
+    bool m_recordingCanvasEnabled;
+#endif
 };
 
 } //namespace

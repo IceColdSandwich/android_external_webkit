@@ -38,6 +38,7 @@
 #include "SkColorPriv.h"
 #include "SkDevice.h"
 #include "SkImageEncoder.h"
+#include "SkPicture.h"
 #include "SkStream.h"
 #include "SkUnPreMultiply.h"
 #include "android_graphics.h"
@@ -72,6 +73,63 @@ GraphicsContext* ImageBuffer::context() const
     return m_context.get();
 }
 
+void ImageBuffer::convertToRecording()
+{
+    GraphicsContext* context = GraphicsContext::createOffscreenRecordingContext(m_size.width(), m_size.height());
+    context->copyState(m_context.get());
+    m_context.set(context);
+}
+
+bool ImageBuffer::drawsUsingRecording() const
+{
+    if (!context() || !context()->platformContext())
+        return false;
+
+    return context()->platformContext()->isRecording();
+}
+
+bool ImageBuffer::isAnimating() const
+{
+    if (!context() || !context()->platformContext())
+        return false;
+
+    return context()->platformContext()->isAnimating();
+}
+
+void ImageBuffer::setIsAnimating() const
+{
+    if (!context() || !context()->platformContext())
+        return;
+
+    return context()->platformContext()->setIsAnimating();
+}
+
+void ImageBuffer::clearRecording() const
+{
+    if (!context() || !context()->platformContext())
+        return;
+
+    context()->platformContext()->clearRecording();
+}
+
+void ImageBuffer::copyRecordingToCanvas(GraphicsContext* paintContext, const IntRect& r) const
+{
+    SkCanvas* paintCanvas = paintContext->platformContext()->mCanvas;
+    SkPicture* canvasRecording = context()->platformContext()->getRecordingPicture();
+
+    SkPaint paint;
+    paint.setXfermodeMode(SkXfermode::kSrcOver_Mode);
+    int saveCount = paintCanvas->saveLayer(0, &paint);
+    paintCanvas->translate(r.location().x(), r.location().y());
+    // Resize to the now known viewport.
+    paintCanvas->scale(r.width() / width(), r.height() / height());
+    // Draw the canvas recording into the layer recording canvas.
+    canvasRecording->draw(paintCanvas);
+    context()->platformContext()->clearRecording();
+    paintCanvas->restoreToCount(saveCount);
+
+}
+
 bool ImageBuffer::drawsUsingCopy() const
 {
     return true;
@@ -79,7 +137,11 @@ bool ImageBuffer::drawsUsingCopy() const
 
 PassRefPtr<Image> ImageBuffer::copyImage() const
 {
-    ASSERT(context());
+    ASSERT(context() && context()->platformContext());
+
+    // Request for canvas bitmap; conversion required.
+    if (context()->platformContext()->isRecording())
+        context()->platformContext()->convertToNonRecording();
 
     SkCanvas* canvas = context()->platformContext()->mCanvas;
     SkDevice* device = canvas->getDevice();
@@ -116,6 +178,12 @@ void ImageBuffer::drawPattern(GraphicsContext* context, const FloatRect& srcRect
 
 PassRefPtr<ByteArray> ImageBuffer::getUnmultipliedImageData(const IntRect& rect) const
 {
+    ASSERT(context() && context()->platformContext());
+
+    // Request for canvas bitmap; conversion required.
+    if (context()->platformContext()->isRecording())
+        context()->platformContext()->convertToNonRecording();
+
     GraphicsContext* gc = this->context();
     if (!gc) {
         return 0;
@@ -178,6 +246,12 @@ PassRefPtr<ByteArray> ImageBuffer::getUnmultipliedImageData(const IntRect& rect)
 
 void ImageBuffer::putUnmultipliedImageData(ByteArray* source, const IntSize& sourceSize, const IntRect& sourceRect, const IntPoint& destPoint)
 {
+    ASSERT(context() && context()->platformContext());
+
+    // Request for canvas bitmap; conversion required.
+    if (context()->platformContext()->isRecording())
+        context()->platformContext()->convertToNonRecording();
+
     GraphicsContext* gc = this->context();
     if (!gc) {
         return;
@@ -236,6 +310,12 @@ void ImageBuffer::putUnmultipliedImageData(ByteArray* source, const IntSize& sou
 
 String ImageBuffer::toDataURL(const String&, const double*) const
 {
+    ASSERT(context() && context()->platformContext());
+
+    // Request for canvas bitmap; conversion required.
+    if (context()->platformContext()->isRecording())
+        context()->platformContext()->convertToNonRecording();
+
     // Encode the image into a vector.
     SkDynamicMemoryWStream pngStream;
     const SkBitmap& dst = android_gc2canvas(context())->getDevice()->accessBitmap(true);

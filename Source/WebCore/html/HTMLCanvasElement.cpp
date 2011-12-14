@@ -22,7 +22,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "config.h"
@@ -48,6 +48,11 @@
 #include "Settings.h"
 #include <math.h>
 #include <stdio.h>
+
+#if PLATFORM(ANDROID)
+#include <cutils/log.h>
+#include <cutils/properties.h>
+#endif
 
 #if USE(JSC)
 #include <runtime/JSLock.h>
@@ -94,8 +99,18 @@ HTMLCanvasElement::HTMLCanvasElement(const QualifiedName& tagName, Document* doc
 #endif
     , m_originClean(true)
     , m_hasCreatedImageBuffer(false)
+#if PLATFORM(ANDROID)
+    , m_recordingCanvasEnabled(true)
+#endif
 {
     ASSERT(hasTagName(canvasTag));
+
+# if PLATFORM(ANDROID)
+    char pval[PROPERTY_VALUE_MAX];
+    property_get("debug.recordingcanvas", pval, "1");
+
+    m_recordingCanvasEnabled = atoi(pval) ? true : false;
+#endif
 }
 
 PassRefPtr<HTMLCanvasElement> HTMLCanvasElement::create(Document* document)
@@ -289,12 +304,30 @@ void HTMLCanvasElement::paint(GraphicsContext* context, const IntRect& r)
     if (hasCreatedImageBuffer()) {
         ImageBuffer* imageBuffer = buffer();
         if (imageBuffer) {
+#if PLATFORM(ANDROID)
+            if (imageBuffer->drawsUsingRecording()) {
+                // The canvas will draw onto a recording canvas. We want to pass the
+                // recorded canvas content onto the GraphicsLayerAndroid recording
+                // canvas.
+                imageBuffer->copyRecordingToCanvas(context, r);
+                return;
+            }
+#endif
+
             if (m_presentedImage)
                 context->drawImage(m_presentedImage.get(), ColorSpaceDeviceRGB, r);
             else if (imageBuffer->drawsUsingCopy())
                 context->drawImage(copiedImage(), ColorSpaceDeviceRGB, r);
             else
                 context->drawImageBuffer(imageBuffer, ColorSpaceDeviceRGB, r);
+
+#if PLATFORM(ANDROID)
+            // Allow one frame to be painted, then switch to a recording canvas.
+            if (imageBuffer->isAnimating() && m_recordingCanvasEnabled) {
+                SLOGD("[%s] Animation detected. Converting the HTML5 canvas buffer to a SkPicture.", __FUNCTION__);
+                imageBuffer->convertToRecording();
+            }
+#endif
         }
     }
 
@@ -459,6 +492,15 @@ void HTMLCanvasElement::createImageBuffer() const
     scriptExecutionContext()->globalData()->heap.reportExtraMemoryCost(m_imageBuffer->dataSize());
 #endif
 }
+
+#if PLATFORM(ANDROID)
+void HTMLCanvasElement::clearRecording(const FloatRect& rect)
+{
+    FloatRect recordingRect(0, 0, width(), height());
+    if(m_imageBuffer && (rect == recordingRect))
+        m_imageBuffer->clearRecording();
+}
+#endif
 
 GraphicsContext* HTMLCanvasElement::drawingContext() const
 {
