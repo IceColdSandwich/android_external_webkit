@@ -341,7 +341,10 @@ void HTMLCanvasElement::paint(GraphicsContext* context, const IntRect& r)
         // canvas.
 
         m_canUseGpuRendering = imageBuffer->canUseGpuRendering();
-        if(m_canUseGpuRendering && m_gpuRendering && m_gpuCanvasEnabled)
+        int id = m_canvasLayer->getCanvasID();
+        bool oom_status = CanvasLayerAndroid::isCanvasOOM(id);
+
+        if(m_canUseGpuRendering && m_gpuRendering && m_gpuCanvasEnabled && !oom_status)
         {
             imageBuffer->copyRecordingToLayer(context, r, m_canvasLayer);
         }

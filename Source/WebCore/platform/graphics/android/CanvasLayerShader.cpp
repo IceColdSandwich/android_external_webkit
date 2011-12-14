@@ -116,10 +116,10 @@ GLuint CanvasLayerShader::createProgram(const char* vSource, const char* fSource
         SLOGD("++++++++++++++++++++++++++++++++++++++++++++++Creating shader for canvas");
 
         glAttachShader(program, vertexShader);
-        GLUtils::checkGlError("Attaching canvas vertex shader to program");
+        GLUtils::checkGlError("Attaching canvas vertex shader to program", false);
 
         glAttachShader(program, fragmentShader);
-        GLUtils::checkGlError("Attaching canvas fragment shader to program");
+        GLUtils::checkGlError("Attaching canvas fragment shader to program", false);
 
         //Linking program
         glLinkProgram(program);
@@ -244,7 +244,7 @@ void CanvasLayerShader::cleanupData(int textureId)
     m_numVertices_map.erase(num_it);
 }
 
-void CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vector<FloatRect>& texturecoords,
+bool CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vector<FloatRect>& texturecoords,
                                         std::vector<int>& primScaleX, std::vector<int>& primScaleY,
                                         int textureId, TransformationMatrix& matrix, float opacity)
 {
@@ -278,7 +278,7 @@ void CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vec
     if(primitives.size() != texturecoords.size())
     {
         SLOGD("++++++++++++++++++ERROR");
-        return;
+        return false;
     }
 
     if(vertex_buffer_data == NULL)
@@ -316,7 +316,7 @@ void CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vec
     }
 
     if(vertex_buffer_data == NULL || texture_buffer_data == NULL)
-        return;
+        return false;
 
     int totalcount = 0;
 
@@ -532,22 +532,34 @@ void CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vec
 
     glBindBuffer(GL_ARRAY_BUFFER, gvertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, 2 * numVertices * sizeof(GLfloat), vertex_buffer_data, GL_STREAM_DRAW);
+
+    bool val = GLUtils::checkGlError("glBufferData", false);
+    if(val)
+        return false;
+
     glEnableVertexAttribArray(m_saPos);
     glVertexAttribPointer(m_saPos, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, gtexture_buffer);
     glBufferData(GL_ARRAY_BUFFER, 2 * numVertices * sizeof(GLfloat), texture_buffer_data, GL_STREAM_DRAW);
+
+    bool val2 = GLUtils::checkGlError("glBufferData", false);
+    if(val2)
+        return false;
+
     glEnableVertexAttribArray(m_saTexCoords);
     glVertexAttribPointer(m_saTexCoords, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glUniform1f(getAlpha(), opacity);
-    glEnable(GL_BLEND);GLUtils::checkGlError("glEnable(GL_BLEND)");
+    glEnable(GL_BLEND);GLUtils::checkGlError("glEnable(GL_BLEND)", false);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     glDrawArrays(GL_TRIANGLES, 0, numVertices);
     glDisableVertexAttribArray(m_saPos);
     glDisableVertexAttribArray(m_saTexCoords);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    return true;
 }
 
 }   // namespace WebCore

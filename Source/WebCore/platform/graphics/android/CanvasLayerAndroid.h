@@ -36,6 +36,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SkPicture.h"
 #include "CanvasLayerShader.h"
 #include <map>
+#include <list>
 
 class SkAltCanvas;
 
@@ -66,6 +67,7 @@ public:
     static void markGLAssetsForRemoval(int id);
     static void cleanupAssets();
     static void cleanupUnusedAssets(std::vector<uint32_t>& deleteIds);
+    static bool isCanvasOOM(int id);
 
 protected:
     SkBitmap ScaleBitmap(SkBitmap src, float sx, float sy);
@@ -95,6 +97,9 @@ private:
     static std::vector<int> s_deleted_canvases;
     static std::map<uint32_t, std::vector<int> > s_texture_refs;
     static std::map<uint32_t, int> s_texture_usage;
+
+    //OOM Management
+    static std::list<int> s_canvas_oom;
 };  // class CanvasLayerAndroid
 
 } // namespace WebCore

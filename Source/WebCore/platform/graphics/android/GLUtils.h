@@ -57,8 +57,8 @@ public:
 
     // GL & EGL error checks
     static void checkEglError(const char* op, EGLBoolean returnVal = EGL_TRUE);
-    static bool checkGlErrorOn(void* p, const char* op);
-    static bool checkGlError(const char* op);
+    static bool checkGlErrorOn(void* p, const char* op, bool crashIfOOM = true);
+    static bool checkGlError(const char* op, bool crashIfOOM = true);
     static void checkSurfaceTextureError(const char* functionName, int status);
 
     // GL & EGL extension checks
@@ -72,6 +72,7 @@ public:
     static GLuint createSampleTexture();
     static GLuint createBaseTileGLTexture(int width, int height);
 
+    static bool createTextureWithBitmapFailSafe(GLuint texture, const SkBitmap& bitmap, GLint filter = GL_LINEAR);
     static void createTextureWithBitmap(GLuint texture, const SkBitmap& bitmap, GLint filter = GL_LINEAR);
     static void updateTextureWithBitmap(GLuint texture, int x, int y, const SkBitmap& bitmap, GLint filter = GL_LINEAR);
     static void createEGLImageFromTexture(GLuint texture, EGLImageKHR* image);

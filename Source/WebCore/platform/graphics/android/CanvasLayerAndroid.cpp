@@ -52,7 +52,8 @@ std::vector<int> CanvasLayerAndroid::s_deleted_canvases;
 std::map<uint32_t, std::vector<int> > CanvasLayerAndroid::s_texture_refs;
 WTF::Mutex CanvasLayerAndroid::s_mutex;
 std::map<uint32_t, int> CanvasLayerAndroid::s_texture_usage;
-int CanvasLayerAndroid::s_maxTextureThreshold = 3;     //Aggressive collection of resources
+std::list<int> CanvasLayerAndroid::s_canvas_oom;
+int CanvasLayerAndroid::s_maxTextureThreshold = 1;     //Aggressive collection of resources
 
 CanvasLayerAndroid::CanvasLayerAndroid()
     : LayerAndroid((RenderLayer*)0)
@@ -78,12 +79,19 @@ void CanvasLayerAndroid::markGLAssetsForRemoval(int id)
     s_deleted_canvases.push_back(id);
 }
 
+bool CanvasLayerAndroid::isCanvasOOM(int id)
+{
+    MutexLocker locker(s_mutex);
+    //return (std::find(s_canvas_oom.begin(), s_canvas_oom.end(), id) != s_canvas_oom.end());
+    if(std::find(s_canvas_oom.begin(), s_canvas_oom.end(), id) == s_canvas_oom.end())
+        return false;
+    else
+        return true;
+}
+
 void CanvasLayerAndroid::cleanupAssets()
 {
     MutexLocker locker(s_mutex);
-
-    if(s_deleted_canvases.empty())
-        return;
 
     for(int ii=0; ii<s_deleted_canvases.size(); ++ii)
     {
@@ -153,7 +161,9 @@ void CanvasLayerAndroid::cleanupAssets()
         ++value;
 
         if(value > s_maxTextureThreshold)
+        {
             deleteIDs.push_back(generationID);
+        }
     }
     cleanupUnusedAssets(deleteIDs);
 }
@@ -249,6 +259,9 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
     std::vector<uint32_t> generationIDs;
     std::vector<uint32_t> generationIDsUsed;
 
+    //Need to lock since we track oom canvases here
+    MutexLocker locker(s_mutex);
+
     //if(m_canvas_id >= 0 && m_canvas != NULL)
     {
         m_currentPicture.drawAltCanvas(&canvas);
@@ -320,8 +333,13 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
                 SkBitmap dst = ScaleBitmap(*bmp, scale, scale);
 
                 glGenTextures(1, &texture);
-
-                GLUtils::createTextureWithBitmap(texture, dst);
+                bool val = GLUtils::createTextureWithBitmapFailSafe(texture, dst);
+                //Do not draw if encounter GL error
+                if(!val)
+                {
+                    s_canvas_oom.push_back(m_canvas_id);
+                    return drawChildrenGL();
+                }
 
                 //Store for future runs
                 s_texture_map2.insert(std::make_pair(generationID, texture));
@@ -482,7 +500,13 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
 
                     if(primitives.size() > 0)
                     {
-                        s_shader.drawPrimitives(primitives, primTexCoord, primScaleX, primScaleY, texture, m_drawTransform, 1.0f);
+                        bool drawVal = s_shader.drawPrimitives(primitives, primTexCoord, primScaleX, primScaleY, texture, m_drawTransform, 1.0f);
+
+                        if(!drawVal)
+                        {
+                            s_canvas_oom.push_back(m_canvas_id);
+                            return drawChildrenGL();
+                        }
                     }
                 }
             }
@@ -537,10 +561,8 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
             if(std::find(canvas_list.begin(), canvas_list.end(), m_canvas_id) == canvas_list.end())
                 continue;
 
-            if(std::find(generationIDsUsed.begin(), generationIDsUsed.end(), generationID) == generationIDsUsed.end())
-            {
+            if(std::find(generationIDsUsed.begin(), generationIDsUsed.end(), generationID) != generationIDsUsed.end())
                 --value;
-            }
         }
     }
 

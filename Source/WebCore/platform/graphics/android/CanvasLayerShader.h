@@ -56,7 +56,7 @@ public:
     void setTitleBarHeight(int& height) {   m_titleBarHeight = height; }
     void setViewRect(IntRect& rect)     {   m_viewRect = rect;  }
     void setWebViewRect(IntRect& rect)  {   m_webViewRect = rect;   }
-    void drawPrimitives(std::vector<SkRect>& primitives, std::vector<FloatRect>& texturecoords,
+    bool drawPrimitives(std::vector<SkRect>& primitives, std::vector<FloatRect>& texturecoords,
                             std::vector<int>& primScaleX, std::vector<int>& primScaleY,
                             int textureId, TransformationMatrix& matrix, float opacity);
     void cleanupData(int textureId);
