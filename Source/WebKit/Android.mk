@@ -135,3 +135,10 @@ LOCAL_SRC_FILES += \
 	android/WebCoreSupport/autofill/FormManagerAndroid.cpp \
 	android/WebCoreSupport/autofill/WebAutofill.cpp
 endif # ENABLE_AUTOFILL == true
+
+# proteus framework
+ifeq ($(PROTEUS_DEVICE_API), true)
+LOCAL_SRC_FILES += \
+        android/WebCoreSupport/FeaturePermissions.cpp
+endif
+

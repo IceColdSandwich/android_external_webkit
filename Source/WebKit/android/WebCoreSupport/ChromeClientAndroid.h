@@ -1,5 +1,6 @@
 /*
  * Copyright 2007, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +35,9 @@
 #include "Timer.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/Threading.h>
+#ifdef PROTEUS_DEVICE_API
+#include "FeaturePermissions.h"
+#endif
 
 namespace WebCore {
 class PopupMenuClient;
@@ -48,6 +52,9 @@ namespace android {
     class ChromeClientAndroid : public ChromeClient {
     public:
         ChromeClientAndroid() : m_webFrame(0), m_geolocationPermissions(0)
+#ifdef PROTEUS_DEVICE_API
+                                , m_featurePermissions(0)
+#endif
 #if USE(ACCELERATED_COMPOSITING)
                                 , m_rootGraphicsLayer(0)
                                 , m_needsLayerSync(false)
@@ -154,6 +161,10 @@ namespace android {
         void storeGeolocationPermissions();
         void onMainFrameLoadStarted();
 
+#ifdef PROTEUS_DEVICE_API
+        virtual void handleRequestPermission(Frame*, Vector<String>&, void*, void (*callback)(void*, bool));
+        virtual void handleRequestPermissionResponse(const Vector<String>&, const String&, bool, bool);
+#endif
         virtual void runOpenPanel(Frame*, PassRefPtr<FileChooser>);
         virtual void setCursor(const Cursor&);
         virtual void chooseIconForFiles(const WTF::Vector<WTF::String>&, FileChooser*);
@@ -204,6 +215,9 @@ namespace android {
         android::WebFrame* m_webFrame;
         // The Geolocation permissions manager.
         OwnPtr<GeolocationPermissions> m_geolocationPermissions;
+#ifdef PROTEUS_DEVICE_API
+        OwnPtr<FeaturePermissions> m_featurePermissions;
+#endif
 #if USE(ACCELERATED_COMPOSITING)
         WebCore::GraphicsLayer* m_rootGraphicsLayer;
         bool m_needsLayerSync;

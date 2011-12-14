@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2006, 2007, 2009 Apple Inc. All rights reserved.
  * Copyright (C) 2008, 2010 Nokia Corporation and/or its subsidiary(-ies)
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -444,6 +445,13 @@ void Chrome::cancelGeolocationPermissionRequestForFrame(Frame* frame, Geolocatio
     m_client->cancelGeolocationPermissionRequestForFrame(frame, geolocation);
 }
 
+#ifdef PROTEUS_DEVICE_API
+void Chrome::handleRequestPermission(Frame* frame, Vector<String>& featureList, void* context, void (*callback)(void*, bool) )
+{
+    m_client->handleRequestPermission(frame, featureList, context, callback);
+}
+
+#endif
 #if ENABLE(DIRECTORY_UPLOAD)
 void Chrome::enumerateChosenDirectory(const String& path, FileChooser* fileChooser)
 {

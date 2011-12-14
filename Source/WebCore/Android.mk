@@ -1263,3 +1263,9 @@ ifeq ($(SUPPORT_COMPLEX_SCRIPTS),true)
 LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	platform/graphics/android/HarfbuzzSkia.cpp
 endif
+
+# proteus:
+ifeq ($(PROTEUS_DEVICE_API), true)
+LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
+        node/NodeProxy.cpp
+endif

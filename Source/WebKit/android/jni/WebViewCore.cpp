@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -165,6 +166,11 @@ FILE* gRenderTreeFile = 0;
 #include <v8.h>
 #endif
 
+#ifdef PROTEUS_DEVICE_API
+// proteus:
+#include "NodeProxy.h"
+#endif
+
 // In some cases, too many invalidations passed to the UI will slow us down.
 // Limit ourselves to 32 rectangles, past this just send the area bounds to the UI.
 // see WebViewCore::recordPictureSet().
@@ -291,6 +297,10 @@ struct WebViewCore::JavaGlue {
     jmethodID   m_populateVisitedLinks;
     jmethodID   m_geolocationPermissionsShowPrompt;
     jmethodID   m_geolocationPermissionsHidePrompt;
+#ifdef PROTEUS_DEVICE_API
+    jmethodID   m_navigatorPermissionsShowPrompt;
+    jmethodID   m_navigatorPermissionsHidePrompt;
+#endif
     jmethodID   m_getDeviceMotionService;
     jmethodID   m_getDeviceOrientationService;
     jmethodID   m_addMessageToConsole;
@@ -426,6 +436,10 @@ WebViewCore::WebViewCore(JNIEnv* env, jobject javaWebViewCore, WebCore::Frame* m
     m_javaGlue->m_populateVisitedLinks = GetJMethod(env, clazz, "populateVisitedLinks", "()V");
     m_javaGlue->m_geolocationPermissionsShowPrompt = GetJMethod(env, clazz, "geolocationPermissionsShowPrompt", "(Ljava/lang/String;)V");
     m_javaGlue->m_geolocationPermissionsHidePrompt = GetJMethod(env, clazz, "geolocationPermissionsHidePrompt", "()V");
+#ifdef PROTEUS_DEVICE_API
+    m_javaGlue->m_navigatorPermissionsShowPrompt = GetJMethod(env, clazz, "navigatorPermissionsShowPrompt", "(Ljava/util/Vector;Ljava/lang/String;)V");
+    m_javaGlue->m_navigatorPermissionsHidePrompt = GetJMethod(env, clazz, "navigatorPermissionsHidePrompt", "()V");
+#endif
     m_javaGlue->m_getDeviceMotionService = GetJMethod(env, clazz, "getDeviceMotionService", "()Landroid/webkit/DeviceMotionService;");
     m_javaGlue->m_getDeviceOrientationService = GetJMethod(env, clazz, "getDeviceOrientationService", "()Landroid/webkit/DeviceOrientationService;");
     m_javaGlue->m_addMessageToConsole = GetJMethod(env, clazz, "addMessageToConsole", "(Ljava/lang/String;ILjava/lang/String;I)V");
@@ -3543,6 +3557,45 @@ void WebViewCore::geolocationPermissionsHidePrompt()
     checkException(env);
 }
 
+#ifdef PROTEUS_DEVICE_API
+void WebViewCore::navigatorPermissionsShowPrompt(const Vector<String>& features, const String& appid)
+{
+    LOG_ASSERT(features,"Feature list can never be NULL");
+    JNIEnv* env = JSC::Bindings::getJNIEnv();
+    jclass vectorClass = env->FindClass("java/util/Vector");
+    LOG_ASSERT(mapClass, "Could not find Vector class!");
+
+    jobject vectorObj = env->NewObject(vectorClass, env->GetMethodID(vectorClass, "<init>", "()V"));
+    LOG_ASSERT(vectorObj, "Could not create a new Vector object");
+
+    jmethodID addMethod = env->GetMethodID(vectorClass, "add","(ILjava/lang/Object;)V");
+    LOG_ASSERT(put, "Could not find add method on Vector");
+
+    for (unsigned int n=0; n<features.size(); n++) {
+        if (features[n].length() == 0 ) continue;
+        jstring feature = env->NewString((jchar *)features[n].characters(), features[n].length());
+        env->CallVoidMethod(vectorObj, addMethod, n, feature);
+        env->DeleteLocalRef(feature);
+    }
+
+    jstring appidString = env->NewString((unsigned short *)appid.characters(), appid.length());
+    env->CallVoidMethod(m_javaGlue->object(env).get(),
+                        m_javaGlue->m_navigatorPermissionsShowPrompt,
+                        vectorObj,
+                        appidString);
+    env->DeleteLocalRef(appidString);
+    checkException(env);
+}
+
+void WebViewCore::navigatorPermissionsHidePrompt()
+{
+    JNIEnv* env = JSC::Bindings::getJNIEnv();
+    env->CallVoidMethod(m_javaGlue->object(env).get(),
+                        m_javaGlue->m_navigatorPermissionsHidePrompt);
+    checkException(env);
+}
+
+#endif
 jobject WebViewCore::getDeviceMotionService()
 {
     JNIEnv* env = JSC::Bindings::getJNIEnv();
@@ -4501,6 +4554,31 @@ static void GeolocationPermissionsProvide(JNIEnv* env, jobject obj, jstring orig
     chromeClient->provideGeolocationPermissions(jstringToWtfString(env, origin), allow, remember);
 }
 
+#ifdef PROTEUS_DEVICE_API
+// Called from Java to provide a Feature permission state for the specified origin.
+static void NavigatorPermissionsProvide(JNIEnv* env, jobject obj, jobject features, jstring appid, jboolean allow, jboolean remember) {
+   __android_log_print(ANDROID_LOG_DEBUG, "WebViewCore", "Inside NavigatorPermissionsProvide");
+    WebViewCore* viewImpl = GET_NATIVE_VIEW(env, obj);
+    Frame* frame = viewImpl->mainFrame();
+
+    ChromeClientAndroid* chromeClient = static_cast<ChromeClientAndroid*>(frame->page()->chrome()->client());
+    Vector<String> featureList;
+    jclass vectorClass = env->GetObjectClass(features);
+    jmethodID sizeMethod = env->GetMethodID(vectorClass, "size", "()I");
+    jmethodID getMethod = env->GetMethodID(vectorClass, "get","(I)Ljava/lang/Object;");
+    int featureLen = env->CallIntMethod(features,sizeMethod);
+    __android_log_print(ANDROID_LOG_DEBUG, "WebViewCore", "Vector Len = %d", featureLen);
+    for(int i=0; i<featureLen; i++) {
+        jstring feature = (jstring)env->CallObjectMethod(features,getMethod,i);
+        __android_log_print(ANDROID_LOG_DEBUG, "WebViewCore", "Got feature");
+        featureList.append(jstringToWtfString(env, feature));
+        env->DeleteLocalRef(feature);
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, "WebViewCore", "calling callback");
+    chromeClient->handleRequestPermissionResponse(featureList,jstringToWtfString(env, appid), allow, remember);
+}
+
+#endif
 static void RegisterURLSchemeAsLocal(JNIEnv* env, jobject obj, jstring scheme) {
 #ifdef ANDROID_INSTRUMENT
     TimeCounterAuto counter(TimeCounter::WebViewCoreTimeCounter);
@@ -4537,6 +4615,15 @@ static void Pause(JNIEnv* env, jobject obj)
         Geolocation* geolocation = frame->domWindow()->navigator()->optionalGeolocation();
         if (geolocation)
             geolocation->suspend();
+
+#ifdef PROTEUS_DEVICE_API
+        // proteus: send pause/resume events to node, this will be used by modules
+        // to stop their activity e.g. camera stopping a preview
+        NodeProxy *proxy = frame->domWindow()->navigator()->nodeProxy();
+        if (proxy) {
+          proxy->pause();
+        }
+#endif
     }
 
     GET_NATIVE_VIEW(env, obj)->deviceMotionAndOrientationManager()->maybeSuspendClients();
@@ -4556,6 +4643,14 @@ static void Resume(JNIEnv* env, jobject obj)
         Geolocation* geolocation = frame->domWindow()->navigator()->optionalGeolocation();
         if (geolocation)
             geolocation->resume();
+
+#ifdef PROTEUS_DEVICE_API
+        // proteus: send resume to node
+        NodeProxy *proxy = frame->domWindow()->navigator()->nodeProxy();
+        if (proxy) {
+          proxy->resume();
+        }
+#endif
     }
 
     GET_NATIVE_VIEW(env, obj)->deviceMotionAndOrientationManager()->maybeResumeClients();
@@ -4783,6 +4878,10 @@ static JNINativeMethod gJavaWebViewCoreMethods[] = {
         (void*) SetNewStorageLimit },
     { "nativeGeolocationPermissionsProvide", "(Ljava/lang/String;ZZ)V",
         (void*) GeolocationPermissionsProvide },
+#ifdef PROTEUS_DEVICE_API
+    { "nativeFeaturePermissionsProvide", "(Ljava/util/Vector;Ljava/lang/String;ZZ)V",
+        (void*) NavigatorPermissionsProvide },
+#endif
     { "nativeSetIsPaused", "(Z)V", (void*) SetIsPaused },
     { "nativePause", "()V", (void*) Pause },
     { "nativeResume", "()V", (void*) Resume },

@@ -1,5 +1,6 @@
 /*
  * Copyright 2007, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,6 +60,11 @@
 #include <utils/misc.h>
 #include <wtf/text/CString.h>
 
+#ifdef PROTEUS_DEVICE_API
+// proteus:
+#include "NodeProxy.h"
+
+#endif
 namespace android {
 
 static const int permissionFlags660 = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
@@ -108,6 +114,10 @@ struct FieldIds {
         // in the same base directory.
         mDatabasePath = env->GetFieldID(clazz, "mDatabasePath", "Ljava/lang/String;");
         mDatabasePathHasBeenSet = env->GetFieldID(clazz, "mDatabasePathHasBeenSet", "Z");
+#endif
+#ifdef PROTEUS_DEVICE_API
+        // proteus: expose the app's writable private path to nodejs
+        mDataPath = env->GetFieldID(clazz, "mDataPath", "Ljava/lang/String;");
 #endif
 #if ENABLE(OFFLINE_WEB_APPLICATIONS)
         mAppCacheEnabled = env->GetFieldID(clazz, "mAppCacheEnabled", "Z");
@@ -272,6 +282,10 @@ struct FieldIds {
 #endif
 #if USE(CHROME_NETWORK_STACK)
     jfieldID mOverrideCacheMode;
+#endif
+#ifdef PROTEUS_DEVICE_API
+    // proteus:
+    jfieldID mDataPath;
 #endif
 };
 
@@ -577,6 +591,12 @@ public:
         // This is required to enable the XMLTreeViewer when loading an XML document that
         // has no style attached to it. http://trac.webkit.org/changeset/79799
         s->setDeveloperExtrasEnabled(true);
+#ifdef PROTEUS_DEVICE_API
+
+        // proteus: provide the app private data path to node
+        str = (jstring)env->GetObjectField(obj, gFieldIds->mDataPath);
+        WebCore::NodeProxy::setAppDataPath(jstringToWtfString(env, str));
+#endif
     }
 };
 

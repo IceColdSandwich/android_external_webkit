@@ -1,5 +1,6 @@
 /*
  * Copyright 2007, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -523,6 +524,24 @@ void ChromeClientAndroid::onMainFrameLoadStarted()
 {
     if (m_geolocationPermissions.get())
         m_geolocationPermissions->resetTemporaryPermissionStates();
+#ifdef PROTEUS_DEVICE_API
+    if(m_featurePermissions.get())
+        m_featurePermissions->resetTemporaryPermissionStates();
+}
+
+void ChromeClientAndroid::handleRequestPermission(Frame* frame, Vector<String>& featureList, void* context, void (*callback)(void*, bool))
+{
+    if(! m_featurePermissions)
+        m_featurePermissions = new FeaturePermissions(android::WebViewCore::getWebViewCore(frame->view()),
+                                                      m_webFrame->page()->mainFrame());
+    m_featurePermissions->handleRequestPermission(frame, featureList, context, callback);
+}
+
+void ChromeClientAndroid::handleRequestPermissionResponse(const Vector<String>& featureList, const String& appid, bool allow, bool remember)
+{
+    ASSERT(m_featurePermissions);
+    m_featurePermissions->handleRequestPermissionResponse(featureList, appid, allow, remember);
+#endif
 }
 
 void ChromeClientAndroid::runOpenPanel(Frame* frame,

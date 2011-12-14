@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2008 Nokia Corporation and/or its subsidiary(-ies)
+    Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -42,6 +43,10 @@ class PluginData;
 #if PLATFORM(ANDROID)
 class ApplicationInstalledCallback;
 class Connection;
+#endif
+#ifdef PROTEUS_DEVICE_API
+// proteus:
+class NodeProxy;
 #endif
 
 typedef int ExceptionCode;
@@ -90,6 +95,12 @@ public:
     virtual void webkitGetUserMedia(const String& options, PassRefPtr<NavigatorUserMediaSuccessCallback>,
                                     PassRefPtr<NavigatorUserMediaErrorCallback> = 0);
 #endif
+#ifdef PROTEUS_DEVICE_API
+    // proteus:
+    // returns the current node proxy, could be null
+    NodeProxy* nodeProxy() const;
+    NodeProxy* createNodeProxy();
+#endif
 
 private:
     Navigator(Frame*);
@@ -104,6 +115,11 @@ private:
 #if PLATFORM(ANDROID) && ENABLE(APPLICATION_INSTALLED)
     RefPtr<ApplicationInstalledCallback> m_applicationInstalledCallback;
     String m_applicationNameQuery;
+#endif
+#ifdef PROTEUS_DEVICE_API
+
+    // proteus:
+    mutable RefPtr<NodeProxy> m_nodeProxy;
 #endif
 };
 

@@ -1,5 +1,6 @@
 /*
  * Copyright 2006, The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -273,6 +274,20 @@ namespace android {
          */
         void geolocationPermissionsHidePrompt();
 
+#ifdef PROTEUS_DEVICE_API
+        /**
+         * Instruct the browser to show a feature permission prompt for the
+         * specified feature & webapp.
+         * @param feature The feature for which webapp is requesting permission
+         * @param appid   The webapp which is requesting permission
+         */
+        void navigatorPermissionsShowPrompt(const Vector<WTF::String>& features, const WTF::String& appid);
+        /**
+         * Instruct the browser to hide the feature permission prompt.
+         */
+        void navigatorPermissionsHidePrompt();
+
+#endif
         jobject getDeviceMotionService();
         jobject getDeviceOrientationService();
 

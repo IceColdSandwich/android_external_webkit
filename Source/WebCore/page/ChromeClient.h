@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2006, 2007, 2008, 2009 Apple, Inc. All rights reserved.
  * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -221,7 +222,9 @@ namespace WebCore {
         // to use Geolocation.
         virtual void requestGeolocationPermissionForFrame(Frame*, Geolocation*) = 0;
         virtual void cancelGeolocationPermissionRequestForFrame(Frame*, Geolocation*) = 0;
-
+#ifdef PROTEUS_DEVICE_API
+        virtual void handleRequestPermission(Frame*, Vector<String>&, void*, void (*callback)(void*, bool)) {}
+#endif
         virtual void runOpenPanel(Frame*, PassRefPtr<FileChooser>) = 0;
         // Asynchronous request to load an icon for specified filenames.
         virtual void chooseIconForFiles(const Vector<String>&, FileChooser*) = 0;

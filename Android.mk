@@ -273,6 +273,18 @@ LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
 	vendor/qcom/opensource/webkit/BackingStore
 endif
 
+# proteus framework
+ifeq ($(PROTEUS_DEVICE_API), true)
+LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
+        $(WEBCORE_PATH)/node \
+        external/node/src \
+        external/node/deps/uv/include \
+        external/node/deps/uv/src/ev
+
+LOCAL_CFLAGS := $(LOCAL_CFLAGS) \
+         -DLOG_TAG_NODE=\"webkit-node\"
+endif
+
 ifeq ($(JAVASCRIPT_ENGINE),v8)
 # Include WTF source file.
 d := Source/JavaScriptCore
@@ -427,12 +439,25 @@ endif
 
 # Build the list of static libraries
 LOCAL_STATIC_LIBRARIES := libxml2 libxslt libhyphenation libskiagpu
+
+# Linkage to v8, node
 ifeq ($(JAVASCRIPT_ENGINE),v8)
-ifeq ($(DYNAMIC_SHARED_LIBV8SO),true)
-LOCAL_SHARED_LIBRARIES += libv8
-else
-LOCAL_STATIC_LIBRARIES += libv8
-endif
+    ifeq ($(DYNAMIC_SHARED_LIBV8SO),true)
+        # use vendor/qcom/opensource
+        LOCAL_SHARED_LIBRARIES += libv8
+        ifeq ($(PROTEUS_DEVICE_API),true)
+            LOCAL_CFLAGS += -DPROTEUS_DEVICE_API
+            LOCAL_SHARED_LIBRARIES += libnode
+        endif
+    else
+        ifeq ($(PROTEUS_DEVICE_API),true)
+            LOCAL_CFLAGS += -DPROTEUS_DEVICE_API
+            # proteus: use external/v8
+            LOCAL_SHARED_LIBRARIES += libv8 libnode
+        else
+            LOCAL_STATIC_LIBRARIES += libv8
+        endif
+    endif
 endif
 
 ifeq ($(HTTP_STACK),chrome)

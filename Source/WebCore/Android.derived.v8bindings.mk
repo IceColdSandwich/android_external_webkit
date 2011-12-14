@@ -39,6 +39,11 @@ ifeq ($(ENABLE_SVG), true)
     FEATURE_DEFINES += ENABLE_SVG=1
 endif
 
+# conditionally compile proteus bindings
+ifeq ($(PROTEUS_DEVICE_API), true)
+    FEATURE_DEFINES += PROTEUS_DEVICE_API
+endif
+
 # CSS
 GEN := \
     $(intermediates)/bindings/V8CSSCharsetRule.h \
