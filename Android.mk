@@ -109,7 +109,7 @@ ifneq ($(HTTP_STACK),chrome)
   ENABLE_AUTOFILL = false
 endif
 
-WEBCORE_ACCELERATED_SCROLLING := true
+#WEBCORE_ACCELERATED_SCROLLING := true
 
 BASE_PATH := $(call my-dir)
 include $(CLEAR_VARS)
