@@ -697,6 +697,8 @@ static JNINativeMethod g_MediaAudioPlayerMethods[] = {
         (void*) OnPrepared },
     { "nativeOnTimeupdate", "(II)V",
         (void*) OnTimeupdate },
+    { "nativeOnPaused", "(I)V",
+        (void*) OnPaused },
 };
 
 int registerMediaPlayerVideo(JNIEnv* env)
