@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, The Android Open Source Project
+ * Copyright 2011, The Android Open Source Project
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,49 +23,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TexturesGenerator_h
-#define TexturesGenerator_h
+#ifndef TestExport_h
+#define TestExport_h
 
-#if USE(ACCELERATED_COMPOSITING)
+// classes used outside of the .so, in tests, are declared with this attribute
+#define TEST_EXPORT __attribute__((visibility("default")))
 
-#include "QueuedOperation.h"
-#include "TiledPage.h"
-#include "TilePainter.h"
-#include <utils/threads.h>
-
-namespace WebCore {
-
-using namespace android;
-
-class BaseLayerAndroid;
-class LayerAndroid;
-
-class TexturesGenerator : public Thread {
-public:
-    TexturesGenerator() : Thread(false)
-        , m_waitForCompletion(false)
-        , m_currentOperation(0) { }
-    virtual ~TexturesGenerator() { }
-    virtual status_t readyToRun();
-
-    void removeOperationsForPage(TiledPage* page);
-    void removePaintOperationsForPage(TiledPage* page, bool waitForRunning);
-    void removeOperationsForFilter(OperationFilter* filter);
-    void removeOperationsForFilter(OperationFilter* filter, bool waitForRunning);
-
-    void scheduleOperation(QueuedOperation* operation);
-
-private:
-    QueuedOperation* popNext();
-    virtual bool threadLoop();
-    Vector<QueuedOperation*> mRequestedOperations;
-    android::Mutex mRequestedOperationsLock;
-    android::Condition mRequestedOperationsCond;
-    bool m_waitForCompletion;
-    QueuedOperation* m_currentOperation;
-};
-
-} // namespace WebCore
-
-#endif // USE(ACCELERATED_COMPOSITING)
-#endif // TexturesGenerator_h
+#endif // #define TestExport_h

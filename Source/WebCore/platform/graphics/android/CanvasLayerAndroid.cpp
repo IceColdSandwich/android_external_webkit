@@ -244,7 +244,7 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
 {
     SkAltCanvas canvas(m_currentBitmap);
     if(m_currentBitmap.isNull() || m_currentBitmap.empty())
-        return drawChildrenGL(glWebViewState, matrix);
+        return drawChildrenGL();
 
     std::vector<uint32_t> generationIDs;
     std::vector<uint32_t> generationIDsUsed;
@@ -544,7 +544,7 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
         }
     }
 
-    return drawChildrenGL(glWebViewState, matrix);
+    return drawChildrenGL();
 
 }
 

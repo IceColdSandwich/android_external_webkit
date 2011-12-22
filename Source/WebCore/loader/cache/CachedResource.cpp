@@ -284,7 +284,7 @@ void CachedResource::addClient(CachedResourceClient* client)
 
 void CachedResource::didAddClient(CachedResourceClient* c)
 {
-    if (!isLoading())
+    if (!isLoading() && !stillNeedsLoad())
         c->notifyFinished(this);
 }
 

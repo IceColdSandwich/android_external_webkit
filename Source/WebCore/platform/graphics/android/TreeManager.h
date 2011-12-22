@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, The Android Open Source Project
+ * Copyright 2011, The Android Open Source Project
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,49 +23,61 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TexturesGenerator_h
-#define TexturesGenerator_h
+#ifndef TreeManager_h
+#define TreeManager_h
 
-#if USE(ACCELERATED_COMPOSITING)
-
-#include "QueuedOperation.h"
-#include "TiledPage.h"
-#include "TilePainter.h"
+#include "TestExport.h"
 #include <utils/threads.h>
+#include "PerformanceMonitor.h"
+
+class Layer;
+class SkRect;
+class SkCanvas;
 
 namespace WebCore {
 
-using namespace android;
+class IntRect;
+class TexturesResult;
 
-class BaseLayerAndroid;
-class LayerAndroid;
-
-class TexturesGenerator : public Thread {
+class TEST_EXPORT TreeManager {
 public:
-    TexturesGenerator() : Thread(false)
-        , m_waitForCompletion(false)
-        , m_currentOperation(0) { }
-    virtual ~TexturesGenerator() { }
-    virtual status_t readyToRun();
+    TreeManager();
 
-    void removeOperationsForPage(TiledPage* page);
-    void removePaintOperationsForPage(TiledPage* page, bool waitForRunning);
-    void removeOperationsForFilter(OperationFilter* filter);
-    void removeOperationsForFilter(OperationFilter* filter, bool waitForRunning);
+    ~TreeManager();
 
-    void scheduleOperation(QueuedOperation* operation);
+    void updateWithTree(Layer* tree, bool brandNew);
+
+    void updateScrollableLayer(int layerId, int x, int y);
+
+    bool drawGL(double currentTime, IntRect& viewRect,
+                SkRect& visibleRect, float scale,
+                bool enterFastSwapMode, bool* treesSwappedPtr, bool* newTreeHasAnimPtr,
+                TexturesResult* texturesResultPtr);
+
+    void drawCanvas(SkCanvas* canvas, bool drawLayers);
+
+    // used in debugging (to avoid exporting TilesManager symbols)
+    static int getTotalPaintedSurfaceCount();
+
+    int baseContentWidth();
+    int baseContentHeight();
 
 private:
-    QueuedOperation* popNext();
-    virtual bool threadLoop();
-    Vector<QueuedOperation*> mRequestedOperations;
-    android::Mutex mRequestedOperationsLock;
-    android::Condition mRequestedOperationsCond;
-    bool m_waitForCompletion;
-    QueuedOperation* m_currentOperation;
+    static void updateScrollableLayerInTree(Layer* tree, int layerId, int x, int y);
+
+    void swap();
+    void clearTrees();
+
+    android::Mutex m_paintSwapLock;
+
+    Layer* m_drawingTree;
+    Layer* m_paintingTree;
+    Layer* m_queuedTree;
+
+    bool m_fastSwapMode;
+    PerformanceMonitor m_perf;
 };
 
 } // namespace WebCore
 
-#endif // USE(ACCELERATED_COMPOSITING)
-#endif // TexturesGenerator_h
+#endif //#define TreeManager_h

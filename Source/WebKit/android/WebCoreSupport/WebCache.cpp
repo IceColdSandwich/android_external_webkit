@@ -46,28 +46,20 @@ namespace android {
 
 static WTF::Mutex instanceMutex;
 
-static const string& rootDirectory()
-{
-    // This method may be called on any thread, as the Java method is
-    // synchronized.
-    static WTF::Mutex mutex;
-    MutexLocker lock(mutex);
-    static string cacheDirectory;
-    if (cacheDirectory.empty()) {
-        JNIEnv* env = JSC::Bindings::getJNIEnv();
-        jclass bridgeClass = env->FindClass("android/webkit/JniUtil");
-        jmethodID method = env->GetStaticMethodID(bridgeClass, "getCacheDirectory", "()Ljava/lang/String;");
-        cacheDirectory = jstringToStdString(env, static_cast<jstring>(env->CallStaticObjectMethod(bridgeClass, method)));
-        env->DeleteLocalRef(bridgeClass);
-    }
-    return cacheDirectory;
-}
-
 static string storageDirectory()
 {
-    // Private cache is currently in memory only
     static const char* const kDirectory = "/webviewCacheChromium";
-    string storageDirectory = rootDirectory();
+
+    JNIEnv* env = JSC::Bindings::getJNIEnv();
+    jclass bridgeClass = env->FindClass("android/webkit/JniUtil");
+    jmethodID method = env->GetStaticMethodID(bridgeClass, "getCacheDirectory", "()Ljava/lang/String;");
+    string storageDirectory = jstringToStdString(env, static_cast<jstring>(env->CallStaticObjectMethod(bridgeClass, method)));
+    env->DeleteLocalRef(bridgeClass);
+
+    // Return empty string if storageDirectory is an empty string
+    if (storageDirectory.empty())
+        return storageDirectory;
+
     storageDirectory.append(kDirectory);
     return storageDirectory;
 }
@@ -108,18 +100,23 @@ WebCache::WebCache(bool isPrivateBrowsing)
     scoped_refptr<base::MessageLoopProxy> cacheMessageLoopProxy = ioThread->message_loop_proxy();
 
     static const int kMaximumCacheSizeBytes = 20 * 1024 * 1024;
-    network::NetworkMonitorFactory* network_factory = network::NetworkMonitorFactory::GetMonitorFactoryInstance();
-    m_hostResolver = network_factory->CreateHostResolver(net::HostResolver::kDefaultParallelism, 0, 0, ioThread->message_loop());
+    //YPHSIAO network::NetworkMonitorFactory* network_factory = network::NetworkMonitorFactory::GetMonitorFactoryInstance();
+    //YPHSIAO m_hostResolver = network_factory->CreateHostResolver(net::HostResolver::kDefaultParallelism, 0, 0, ioThread->message_loop());
     if (!isPrivateBrowsing) {
-        m_hostPreresolver = CreateResolverIPObserver(m_hostResolver.get());
+        //YPHSIAO m_hostPreresolver = CreateResolverIPObserver(m_hostResolver.get());
     }
     m_proxyConfigService = new ProxyConfigServiceAndroid();
     net::HttpCache::BackendFactory* backendFactory;
     if (isPrivateBrowsing)
         backendFactory = net::HttpCache::DefaultBackend::InMemory(kMaximumCacheSizeBytes / 2);
     else {
-        FilePath directoryPath(storageDirectory().c_str());
-        backendFactory = new net::HttpCache::DefaultBackend(net::DISK_CACHE, directoryPath, kMaximumCacheSizeBytes, cacheMessageLoopProxy);
+        string storage(storageDirectory());
+        if (storage.empty()) // Can't get a storage directory from the OS
+            backendFactory = net::HttpCache::DefaultBackend::InMemory(kMaximumCacheSizeBytes / 2);
+        else {
+            FilePath directoryPath(storage.c_str());
+            backendFactory = new net::HttpCache::DefaultBackend(net::DISK_CACHE, directoryPath, kMaximumCacheSizeBytes, cacheMessageLoopProxy);
+        }
     }
 
     m_cache = new net::HttpCache(m_hostResolver.get(),
