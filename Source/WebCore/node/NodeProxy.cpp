@@ -87,6 +87,14 @@ NodeProxy::NodeProxy(Frame* frame)
   NODE_LOGF();
   NODE_ASSERT(frame);
 
+  // Initialize the node event system on demand
+  if (!s_nodeInitialized) {
+    NODE_ASSERT(s_moduleRootPath);
+    NODE_LOGI("%s, rootModulePath(%s)", __FUNCTION__, s_moduleRootPath->latin1().data());
+    node::Node::Initialize(true, s_moduleRootPath->latin1().data());
+    s_nodeInitialized = true;
+  }
+
   // load the node instance
   NODE_LOGI("%s(tid=%d), frame(%p)", __FUNCTION__, gettid(), m_frame);
   m_node = new node::Node(this);
@@ -138,11 +146,6 @@ void NodeProxy::handleNodeEventEvThread(node::NodeEvent *ev) {
   NodeProxyTimer *timer = new NodeProxyTimer(*ev);
   ::android::JavaSharedClient::EnqueueFunctionPtr(handleNodeEventMainThread, timer);
   NODE_LOGM("%s(tid=%d), enqueued event on to main thread", __FUNCTION__, gettid());
-  if (ev->type == node::NODE_EVENT_LIBEV_DONE) {
-    NODE_LOGV("%s(tid=%d): detaching current thread", __FUNCTION__, gettid());
-    JavaVM* vm = JSC::Bindings::getJavaVM();
-    vm->DetachCurrentThread();
-  }
 }
 
 void NodeProxy::HandleNodeEvent(node::NodeEvent *ev) {
@@ -222,12 +225,6 @@ void NodeProxy::resume() {
 void NodeProxy::setAppDataPath(const String& dataPath) {
   NODE_LOGI("%s, module path: %s", __FUNCTION__, dataPath.latin1().data());
   s_moduleRootPath = new String(dataPath);
-
-  if (!s_nodeInitialized) {
-    NODE_LOGI("%s, rootModulePath(%s)", __FUNCTION__, s_moduleRootPath->latin1().data());
-    node::Node::Initialize(true, s_moduleRootPath->latin1().data());
-    s_nodeInitialized = true;
-  }
 }
 
 }
