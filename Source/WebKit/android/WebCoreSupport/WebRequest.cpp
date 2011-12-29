@@ -107,7 +107,7 @@ WebRequest::WebRequest(WebUrlLoaderClient* loader, const WebResourceRequest& web
     if (ShouldSetRequestPriority())
     {
         ResourceType::Type chromiumTargetType = convertWebkitTargetTypeToChromiumTargetType(webResourceRequest.target_type());
-        //YPHSIAO m_request->set_priority(net::DetermineRequestPriority(chromiumTargetType));
+        m_request->set_priority(net::DetermineRequestPriority(chromiumTargetType));
     }
 }
 

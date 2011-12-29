@@ -100,10 +100,10 @@ WebCache::WebCache(bool isPrivateBrowsing)
     scoped_refptr<base::MessageLoopProxy> cacheMessageLoopProxy = ioThread->message_loop_proxy();
 
     static const int kMaximumCacheSizeBytes = 20 * 1024 * 1024;
-    //YPHSIAO network::NetworkMonitorFactory* network_factory = network::NetworkMonitorFactory::GetMonitorFactoryInstance();
-    //YPHSIAO m_hostResolver = network_factory->CreateHostResolver(net::HostResolver::kDefaultParallelism, 0, 0, ioThread->message_loop());
+    network::NetworkMonitorFactory* network_factory = network::NetworkMonitorFactory::GetMonitorFactoryInstance();
+    m_hostResolver = network_factory->CreateHostResolver(net::HostResolver::kDefaultParallelism, 0, 0, ioThread->message_loop());
     if (!isPrivateBrowsing) {
-        //YPHSIAO m_hostPreresolver = CreateResolverIPObserver(m_hostResolver.get());
+        m_hostPreresolver = CreateResolverIPObserver(m_hostResolver.get());
     }
     m_proxyConfigService = new ProxyConfigServiceAndroid();
     net::HttpCache::BackendFactory* backendFactory;
