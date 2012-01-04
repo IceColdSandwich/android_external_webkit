@@ -350,7 +350,7 @@ public:
             return;
 
         m_glue = new JavaGlue;
-        m_glue->m_getInstance = env->GetStaticMethodID(clazz, "getInstance", "(Landroid/webkit/WebViewCore;I)Landroid/webkit/HTML5VideoViewProxy;");
+        m_glue->m_getInstance = env->GetStaticMethodID(clazz, "getInstance", "(Landroid/webkit/WebViewCore;II)Landroid/webkit/HTML5VideoViewProxy;");
         m_glue->m_loadPoster = env->GetMethodID(clazz, "loadPoster", "(Ljava/lang/String;)V");
         m_glue->m_play = env->GetMethodID(clazz, "play", "(Ljava/lang/String;II)V");
 
@@ -389,7 +389,7 @@ public:
             return;
 
         // Get the HTML5VideoViewProxy instance
-        obj = env->CallStaticObjectMethod(clazz, m_glue->m_getInstance, javaObject.get(), this);
+        obj = env->CallStaticObjectMethod(clazz, m_glue->m_getInstance, javaObject.get(), this, m_videoLayer->uniqueId());
         m_glue->m_javaProxy = env->NewGlobalRef(obj);
         // Send the poster
         jstring jUrl = 0;
