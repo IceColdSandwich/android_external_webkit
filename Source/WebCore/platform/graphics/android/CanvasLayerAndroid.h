@@ -54,7 +54,7 @@ public:
     virtual bool needsTexture() const { return false; }
     virtual void paintBitmapGL() {}
 
-    virtual bool drawGL(GLWebViewState*, SkMatrix& matrix);
+    virtual bool drawGL();
 
     void setPicture(SkPicture& picture);
     SkPicture getPicture() const  {   return m_currentPicture;    }

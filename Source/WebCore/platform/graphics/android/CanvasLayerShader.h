@@ -56,6 +56,14 @@ public:
     void setTitleBarHeight(int& height) {   m_titleBarHeight = height; }
     void setViewRect(IntRect& rect)     {   m_viewRect = rect;  }
     void setWebViewRect(IntRect& rect)  {   m_webViewRect = rect;   }
+    void setClipRect(FloatRect& rect)   {   m_clipRect = rect;  }
+    void setScreenClip(IntRect& rect)   {   m_screenClip = rect;    }
+    void setDocumentViewport(FloatRect& rect)   {   m_documentViewport = rect;  }
+    void setAlphaLayer(bool& val)       {   m_alphaLayer = val; }
+    void setScale(float& val)           {   m_currentScale = val;   }
+    void setRepositionMatrix(TransformationMatrix& matrix)  {   m_repositionMatrix = matrix;    }
+    void setWebViewMatrix(TransformationMatrix& matrix)     {   m_webViewMatrix = matrix;   }
+
     bool drawPrimitives(std::vector<SkRect>& primitives, std::vector<FloatRect>& texturecoords,
                             std::vector<int>& primScaleX, std::vector<int>& primScaleY,
                             int textureId, TransformationMatrix& matrix, float opacity);
@@ -99,6 +107,13 @@ private:
    int m_titleBarHeight;
    IntRect m_viewRect;
    IntRect m_webViewRect;
+   FloatRect m_documentViewport;
+   bool m_alphaLayer;
+   TransformationMatrix m_webViewMatrix;
+   float m_currentScale;
+   TransformationMatrix m_repositionMatrix;
+   FloatRect m_clipRect;
+   IntRect m_screenClip;
 };   // class CanvasLayerShader
 
 }   // namespace WebCore

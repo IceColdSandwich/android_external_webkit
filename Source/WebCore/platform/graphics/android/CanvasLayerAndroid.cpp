@@ -250,7 +250,7 @@ SkBitmap CanvasLayerAndroid::ScaleBitmap(SkBitmap src, float sx, float sy)
     return dst;
 }
 
-bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix)
+bool CanvasLayerAndroid::drawGL()
 {
     SkAltCanvas canvas(m_currentBitmap);
     if(m_currentBitmap.isNull() || m_currentBitmap.empty())
@@ -363,6 +363,13 @@ bool CanvasLayerAndroid::drawGL(GLWebViewState* glWebViewState, SkMatrix& matrix
         s_shader.setTitleBarHeight(TilesManager::instance()->shader()->getTitleBarHeight());
         s_shader.setViewRect(TilesManager::instance()->shader()->getViewRect());
         s_shader.setWebViewRect(TilesManager::instance()->shader()->getWebViewRect());
+        s_shader.setClipRect(TilesManager::instance()->shader()->getClipRect());
+        s_shader.setScreenClip(TilesManager::instance()->shader()->getScreenClip());
+        s_shader.setDocumentViewport(TilesManager::instance()->shader()->getDocumentViewport());
+        s_shader.setAlphaLayer(TilesManager::instance()->shader()->getAlphaLayer());
+        s_shader.setScale(TilesManager::instance()->shader()->getScale());
+        s_shader.setRepositionMatrix(TilesManager::instance()->shader()->getRepositionMatrix());
+        s_shader.setWebViewMatrix(TilesManager::instance()->shader()->getWebViewMatrix());
 
         std::map<int, std::vector<SkRect> > primitives_map;
         std::map<int, std::vector<FloatRect> > primTexCoord_map;

@@ -342,6 +342,11 @@ bool CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vec
         scale.scale3d(width, height, 1.0);
 
         TransformationMatrix total = m_projectionMatrix;
+        if(!m_alphaLayer)
+        {
+            total.multiply(m_repositionMatrix);
+            total.multiply(m_webViewMatrix);
+        }
         total.multiply(matrix);
         total.multiply(translate);
         total.multiply(scale);

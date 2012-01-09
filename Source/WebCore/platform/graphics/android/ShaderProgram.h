@@ -86,6 +86,11 @@ public:
     IntRect& getScreenClip()    { return m_screenClip;  }
     int& getTitleBarHeight()    { return m_titleBarHeight;  }
     IntRect& getWebViewRect()   { return m_webViewRect; }
+    FloatRect& getDocumentViewport()    { return m_documentViewport;  }
+    bool& getAlphaLayer()   { return m_alphaLayer;  }
+    float& getScale()   { return m_currentScale;}
+    TransformationMatrix& getRepositionMatrix() { return m_repositionMatrix;    }
+    TransformationMatrix& getWebViewMatrix()    { return m_webViewMatrix;   }
 
     float contrast() { return m_contrast; }
     void setContrast(float c) {
