@@ -334,10 +334,10 @@ bool CanvasLayerShader::drawPrimitives(std::vector<SkRect>& primitives, std::vec
         float fBottom = SkScalarRound(geometry.fBottom);
 
         float width = fRight - fLeft;
-        float height = fTop - fBottom;
+        float height = fBottom - fTop;
 
         TransformationMatrix translate;
-        translate.translate3d(fLeft, fTop + m_titleBarHeight + m_webViewRect.y() + m_viewRect.y(), 0.0);
+        translate.translate3d(fLeft, fTop + m_titleBarHeight, 0.0);
         TransformationMatrix scale;
         scale.scale3d(width, height, 1.0);
 
