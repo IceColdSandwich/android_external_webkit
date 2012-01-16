@@ -1,7 +1,6 @@
 /*
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * Copyright (C) 2004, 2006, 2008, 2009, 2010 Apple Inc. All rights reserved.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -22,7 +21,6 @@
 #ifndef MediaList_h
 #define MediaList_h
 
-#include "MediaQuery.h"
 #include "StyleBase.h"
 #include <wtf/Forward.h>
 #include <wtf/PassRefPtr.h>
@@ -77,7 +75,6 @@ public:
 
     void appendMediaQuery(PassOwnPtr<MediaQuery>);
     const Vector<MediaQuery*>& mediaQueries() const { return m_queries; }
-    bool operator==(const MediaList& o);
 
 private:
     MediaList(CSSStyleSheet* parentSheet, bool fallbackToDescription);
@@ -89,21 +86,6 @@ private:
     Vector<MediaQuery*> m_queries;
     bool m_fallback; // true if failed media query parsing should fallback to media description parsing
 };
-
-inline bool MediaList::operator==(const MediaList& o)
-{
-    if (m_fallback != o.m_fallback)
-       return false;
-
-    if (m_queries.size() != o.m_queries.size())
-        return false;
-
-    for (size_t i = 0; i < m_queries.size(); ++i) {
-        if (!(*(m_queries[i]) == *(o.m_queries[i])))
-            return false;
-    }
-    return true;
-}
 
 } // namespace
 

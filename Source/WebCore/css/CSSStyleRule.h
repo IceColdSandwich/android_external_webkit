@@ -2,7 +2,6 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -23,7 +22,6 @@
 #ifndef CSSStyleRule_h
 #define CSSStyleRule_h
 
-#include "CSSMutableStyleDeclaration.h"
 #include "CSSRule.h"
 #include "CSSSelectorList.h"
 #include <wtf/PassRefPtr.h>
@@ -62,8 +60,6 @@ public:
 
     int sourceLine() { return m_sourceLine; }
 
-    virtual bool operator==(const CSSRule& o);
-
 protected:
     CSSStyleRule(CSSStyleSheet* parent, int sourceLine);
 
@@ -77,35 +73,6 @@ private:
     CSSSelectorList m_selectorList;
     int m_sourceLine;
 };
-
-inline bool CSSStyleRule::operator==(const CSSRule& o)
-{
-    if (type() != o.type())
-        return false;
-
-    const CSSStyleRule* rule = static_cast<const CSSStyleRule*>(&o);
-
-    if ((m_style && !rule->m_style) || (!m_style && rule->m_style) || (!(*(m_style) == *(rule->m_style))))
-        return false;
-
-    CSSSelector* s1 = selectorList().first();
-    CSSSelector* s2 = rule->selectorList().first();
-
-    if (s1 && !s2)
-        return false;
-
-    if (s2 && !s1)
-        return false;
-
-    while (s1 && s2) {
-        if (!(*s1 == *s2))
-            return false;
-        s1 = CSSSelectorList::next(s1);
-        s2 = CSSSelectorList::next(s2);
-    }
-
-    return true;
-}
 
 } // namespace WebCore
 

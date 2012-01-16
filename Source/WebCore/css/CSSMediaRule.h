@@ -3,7 +3,6 @@
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
  * Copyright (C) 2006 Samuel Weinig (sam@webkit.org)
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -53,8 +52,6 @@ public:
     // Not part of the CSSOM
     unsigned append(CSSRule*);
 
-    virtual bool operator==(const CSSRule& o);
-
 private:
     CSSMediaRule(CSSStyleSheet* parent, PassRefPtr<MediaList>, PassRefPtr<CSSRuleList>);
 
@@ -66,34 +63,6 @@ private:
     RefPtr<MediaList> m_lstMedia;
     RefPtr<CSSRuleList> m_lstCSSRules;
 };
-
-inline bool CSSMediaRule::operator==(const CSSRule& o)
-{
-    if (type() != o.type())
-        return false;
-
-    const CSSMediaRule* rule = static_cast<const CSSMediaRule*>(&o);
-
-    if (m_lstMedia && rule->m_lstMedia && !(*(media()) == *(rule->media())))
-        return false;
-
-    if (m_lstCSSRules && rule->m_lstCSSRules && (m_lstCSSRules->length() != rule->m_lstCSSRules->length()))
-        return false;
-
-    for (unsigned i = 0; i < m_lstCSSRules->length(); i++) {
-        bool found = false;
-        for (unsigned j = 0; j < rule->m_lstCSSRules->length(); j++) {
-            if (m_lstCSSRules->item(i) == rule->m_lstCSSRules->item(j)) {
-                found = true;
-                break;
-            }
-        }
-        if(!found)
-            return false;
-    }
-
-    return true;
-}
 
 } // namespace WebCore
 

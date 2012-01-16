@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2007, 2008 Apple Inc. All rights reserved.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +26,6 @@
 #ifndef WebKitCSSKeyframeRule_h
 #define WebKitCSSKeyframeRule_h
 
-#include "CSSMutableStyleDeclaration.h"
 #include "CSSRule.h"
 #include <wtf/PassRefPtr.h>
 #include <wtf/RefPtr.h>
@@ -72,7 +70,6 @@ public:
 
     CSSMutableStyleDeclaration*         declaration()       { return m_style.get(); }
     const CSSMutableStyleDeclaration*   declaration() const { return m_style.get(); }
-    virtual bool operator==(const CSSRule& o);
     
 private:
     static void parseKeyString(const String& s, Vector<float>& keys);
@@ -82,38 +79,6 @@ private:
     RefPtr<CSSMutableStyleDeclaration> m_style;
     String m_key;        // comma separated list of keys
 };
-
-inline bool WebKitCSSKeyframeRule::operator==(const CSSRule& o)
-{
-    if (type() != o.type())
-        return false;
-
-    const WebKitCSSKeyframeRule* rule = static_cast<const WebKitCSSKeyframeRule*>(&o);
-
-    if ((m_style && !rule->m_style) || (!m_style && rule->m_style))
-        return false;
-
-    if (m_style && rule->m_style) {
-        CSSMutableStyleDeclarationConstIterator c1 = m_style->begin();
-        CSSMutableStyleDeclarationConstIterator c2 = rule->m_style->begin();
-        while (c1 != m_style->end()) {
-            bool found = false;
-            while (c2 != rule->m_style->end()) {
-                if (*c1 == *c2) {
-                    found = true;
-                    break;
-                }
-                ++c2;
-            }
-            if(!found)
-                return false;
-             ++c1;
-        }
-
-    }
-
-    return (m_key == rule->m_key);
-}
 
 } // namespace WebCore
 

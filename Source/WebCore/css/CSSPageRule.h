@@ -2,7 +2,6 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2006, 2008 Apple Inc. All rights reserved.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -44,8 +43,6 @@ public:
 
     virtual String selectorText() const;
 
-    virtual bool operator==(const CSSRule& o);
-
 private:
     CSSPageRule(CSSStyleSheet* parent, int sourceLine);
 
@@ -54,14 +51,6 @@ private:
     // Inherited from CSSRule
     virtual unsigned short type() const { return PAGE_RULE; }
 };
-
-inline bool CSSPageRule::operator==(const CSSRule& o)
-{
-    if (type() != o.type())
-        return false;
-
-    return true;
-}
 
 } // namespace WebCore
 

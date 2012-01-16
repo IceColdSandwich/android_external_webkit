@@ -138,7 +138,6 @@ public:
     int emphasisMarkHeight(const AtomicString&) const;
 
     const SimpleFontData* primaryFont() const;
-    bool hasFontList() const { return m_fontList != NULL; }
     const FontData* fontDataAt(unsigned) const;
     GlyphData glyphDataForCharacter(UChar32, bool mirror, FontDataVariant = AutoVariant) const;
     bool primaryFontHasGlyphForCharacter(UChar32) const;

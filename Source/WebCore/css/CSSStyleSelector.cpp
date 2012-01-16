@@ -80,14 +80,12 @@
 #include "RenderStyleConstants.h"
 #include "RenderTheme.h"
 #include "RotateTransformOperation.h"
-#include "SSCNode.h"
 #include "ScaleTransformOperation.h"
 #include "SelectionController.h"
 #include "Settings.h"
 #include "ShadowData.h"
 #include "ShadowValue.h"
 #include "SkewTransformOperation.h"
-#include "StyleCacheManager.h"
 #include "StyleCachedImage.h"
 #include "StylePendingImage.h"
 #include "StyleGeneratedImage.h"
@@ -124,11 +122,6 @@
 #if PLATFORM(QT)
 #include <qwebhistoryinterface.h>
 #endif
-
-#include "cutils/log.h"
-#define LOG_TAG_INSTR "PageLoadInstr"
-
-#include <cutils/properties.h>
 
 using namespace std;
 
@@ -444,7 +437,6 @@ CSSStyleSelector::CSSStyleSelector(Document* document, StyleSheetList* styleShee
     , m_elementLinkState(NotInsideLink)
     , m_fontSelector(CSSFontSelector::create(document))
     , m_applyProperty(CSSStyleApplyProperty::sharedCSSStyleApplyProperty())
-    , m_cacheHit(0)
 {
     m_matchAuthorAndUserStyles = matchAuthorAndUserStyles;
     
@@ -471,7 +463,7 @@ CSSStyleSelector::CSSStyleSelector(Document* document, StyleSheetList* styleShee
         m_medium = adoptPtr(new MediaQueryEvaluator("all"));
 
     if (root)
-        m_rootDefaultStyle = styleForElement(root, 0, false, true, false, true); // don't ref, because the RenderStyle is allocated from global heap
+        m_rootDefaultStyle = styleForElement(root, 0, false, true); // don't ref, because the RenderStyle is allocated from global heap
 
     if (m_rootDefaultStyle && view)
         m_medium = adoptPtr(new MediaQueryEvaluator(view->mediaType(), view->frame(), m_rootDefaultStyle.get()));
@@ -1247,117 +1239,7 @@ PassRefPtr<RenderStyle> CSSStyleSelector::styleForDocument(Document* document)
 // If resolveForRootDefault is true, style based on user agent style sheet only. This is used in media queries, where
 // relative units are interpreted according to document root element style, styled only with UA stylesheet
 
-PassRefPtr<RenderStyle> CSSStyleSelector::styleForElement(Element* element, RenderStyle* defaultParent, bool allowSharing, bool resolveForRootDefault, bool matchVisitedPseudoClass, bool avoidStyleCache)
-{
-    char value[PROPERTY_VALUE_MAX] = {'\0'};
-    property_get("net.webkit.stylecache", value, "1");
-    int stylecache = (unsigned)atoi(value);
-
-    if(stylecache == 0) {
-        RefPtr<RenderStyle> retStyle = calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass);
-        return retStyle;
-    }
-
-    // element is document node
-    // yes, matching element found, get its style and return
-    // no, matching element found
-    // search style cache manager for the ssc tree given the url
-    // ssc tree exists, set the root element's ssc node to the ssc node from style cache manager
-    // no ssc tree exists, create ssc node, calculate style and set node
-
-    // element is not document node
-    // find its root element and get root's corresponding ssc node
-    ///yes ssc node in root found, search all children for ssc node that matches current node
-    // no match found, create ssc node, calc style and set node, append the new ssc node as a child of root ssc node
-    // yes, match found, return style
-
-//#if 0
-    ASSERT(element);
-
-    if (avoidStyleCache)
-        return 0;
-
-    const KURL& documentUrl = element->document()->url();
-    const String& url = documentUrl.string();
-    if (element->hasTagName(iframeTag) || element->hasTagName(objectTag) || element->hasTagName(embedTag)
-            || element->hasTagName(appletTag) || documentUrl == blankURL() || url.isEmpty())
-        return calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass);
-
-    RefPtr<SSCNode> sscNode = 0;
-    RefPtr<RenderStyle> retStyle = 0;
-
-    if (element->parentNode() && element->parentNode()->isDocumentNode()) {
-        if ((sscNode = element->sscNode())) {
-            m_cacheHit++;
-            retStyle = sscNode->style();
-        } else {
-            RefPtr<CSSRuleList> ruleList = element->document()->styleSelector()->styleRulesForElement(element, true);
-            RefPtr<RenderStyle> style = calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass, ruleList);
-            if((style && style->font().hasFontList() && style->font().primaryFont() && !style->font().primaryFont()->isCustomFont()) || (style && !style->font().hasFontList())) {
-                RefPtr<SSCNode> newSSCNode = SSCNode::create(element, style, ruleList);
-                element->setSSCNode(newSSCNode);
-                bool pFrame = element->document()->frame() && element->document()->frame()->tree() ? element->document()->frame()->tree()->parent() == NULL : false;
-                styleCache()->add(url, newSSCNode, pFrame);
-            }
-            retStyle = style;
-        }
-    } else {
-
-	KURL url = element->document()->completeURL(url);
-        const String& urls = url.string();
-        RefPtr<SSCNode> rootSSCNode = styleCache()->getSSCTree(urls);
-
-        RefPtr<SSCNode> sscRootNode = element->parentElement() ? element->parentElement()->sscNode() : 0;
-        RefPtr<SSCNode> cachedSSCNode = 0;
-        const QualifiedName& tagName = element->tagQName();
-        RefPtr<CSSRuleList> ruleList = 0;
-        if ((sscRootNode) && ((tagName == bodyTag) || (!tagName.toString().isEmpty() && (element->hasClass() || element->hasID())))) {
-            ruleList = element->document()->styleSelector()->styleRulesForElement(element, true);
-            cachedSSCNode = sscRootNode->attributesMatchChildren(element, ruleList);
-
-            if (cachedSSCNode && cachedSSCNode->style()) {
-                retStyle = cachedSSCNode->style();
-                m_cacheHit++;
-                element->setSSCNode(cachedSSCNode);
-            } else if (cachedSSCNode && !cachedSSCNode->style()) {
-                RefPtr<RenderStyle> style = calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass, ruleList);
-                if ((style && style->font().hasFontList() && ruleList && style->font().primaryFont() && !style->font().primaryFont()->isCustomFont()) || (style && !style->font().hasFontList() && ruleList)) {
-                    cachedSSCNode->setStyle(style);
-                    cachedSSCNode->appendRuleList(ruleList);
-                    element->setSSCNode(cachedSSCNode);
-                }
-                retStyle = style;
-            } else {
-                RefPtr<RenderStyle> style = calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass, ruleList);
-                if ((style && style->font().hasFontList() && style->font().primaryFont() && !style->font().primaryFont()->isCustomFont()) || (style && !style->font().hasFontList())) {
-                    RefPtr<SSCNode> newSSCNode = SSCNode::create(element, style, ruleList);
-                    element->setSSCNode(newSSCNode);
-                    sscRootNode->appendChild(newSSCNode);
-                }
-                retStyle = style;
-            }
-        } else {
-                if ((tagName == bodyTag) || (!tagName.toString().isEmpty() && (element->hasClass() || element->hasID())))
-                    ruleList = element->document()->styleSelector()->styleRulesForElement(element, true);
-
-                RefPtr<RenderStyle> style = calcStyleForElement(element, 0, allowSharing, resolveForRootDefault, matchVisitedPseudoClass, ruleList);
-                if(((style && style->font().hasFontList() && style->font().primaryFont() && !style->font().primaryFont()->isCustomFont()) && ((tagName == bodyTag) || (!tagName.toString().isEmpty() && (element->hasClass() || element->hasID())))) || ((style && !style->font().hasFontList()) && ((tagName == bodyTag) || (!tagName.toString().isEmpty() && (element->hasClass() || element->hasID()))))) {
-                        RefPtr<SSCNode> newSSCNode = SSCNode::create(element, style, ruleList);
-                        element->setSSCNode(newSSCNode);
-                }
-
-                retStyle = style;
-        }
-    }
-
-    ASSERT(retStyle);
-    return retStyle;
-
-//#endif
-
-}
-
-PassRefPtr<RenderStyle> CSSStyleSelector::calcStyleForElement(Element* e, RenderStyle* defaultParent, bool allowSharing, bool resolveForRootDefault, bool matchVisitedPseudoClass, PassRefPtr<CSSRuleList> ruleList)
+PassRefPtr<RenderStyle> CSSStyleSelector::styleForElement(Element* e, RenderStyle* defaultParent, bool allowSharing, bool resolveForRootDefault, bool matchVisitedPseudoClass)
 {
     // Once an element has a renderer, we don't try to destroy it, since otherwise the renderer
     // will vanish if a style recalc happens during loading.
@@ -1392,7 +1274,7 @@ PassRefPtr<RenderStyle> CSSStyleSelector::calcStyleForElement(Element* e, Render
             if (parentVisitedStyle)
                 parentStyle = parentVisitedStyle;
         }
-        visitedStyle = calcStyleForElement(e, parentStyle, false, false, true, ruleList);
+        visitedStyle = styleForElement(e, parentStyle, false, false, true);
         initForStyleResolve(e, defaultParent);
     }
 
@@ -1541,16 +1423,8 @@ PassRefPtr<RenderStyle> CSSStyleSelector::calcStyleForElement(Element* e, Render
         }
     
         // 6. Check the rules in author sheets next.
-
-        if (m_matchAuthorAndUserStyles) {
-            if (ruleList) {
-                firstAuthorRule = m_matchedDecls.size();
-                for (unsigned i = 0; i < ruleList->length(); i++)
-                    addMatchedDeclaration(static_cast<CSSStyleRule*>(ruleList->item(i))->declaration());
-                lastAuthorRule = m_matchedDecls.size()-1;
-             } else
-                 matchRules(m_authorStyle.get(), firstAuthorRule, lastAuthorRule, false);
-        }
+        if (m_matchAuthorAndUserStyles)
+            matchRules(m_authorStyle.get(), firstAuthorRule, lastAuthorRule, false);
 
         // 7. Now check our inline style attribute.
         if (m_matchAuthorAndUserStyles && m_styledElement) {

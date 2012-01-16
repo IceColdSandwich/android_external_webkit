@@ -2,7 +2,6 @@
  * (C) 1999-2003 Lars Knoll (knoll@kde.org)
  * (C) 2002-2003 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2002, 2005, 2006 Apple Computer, Inc.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -114,25 +113,6 @@ unsigned CSSRuleList::insertRule(CSSRule* rule, unsigned index)
 
     m_lstCSSRules.insert(index, rule);
     return index;
-}
-
-bool CSSRuleList::operator<=(const CSSRuleList& o)
-{
-    CSSRuleList* rule = const_cast<CSSRuleList*>(&o);
-    for (int i = 0; i < length(); i++) {
-        bool found = false;
-        RefPtr<CSSRule> cssRule = item(i);
-        for (int j = 0; j < rule->length(); j++) {
-            RefPtr<CSSRule> cssRule1 = rule->item(j);
-            if (*(cssRule.get()) == *(cssRule1.get())) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            return false;
-    }
-    return true;
 }
 
 } // namespace WebCore

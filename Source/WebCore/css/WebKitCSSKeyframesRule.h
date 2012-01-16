@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2007, 2008 Apple Inc. All rights reserved.
- * Copyright (C) 2011, Code Aurora Forum, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,8 +81,6 @@ public:
     const WebKitCSSKeyframeRule*  item(unsigned index) const;
     void append(WebKitCSSKeyframeRule* rule);
 
-    virtual bool operator==(const CSSRule& o);
-
 private:
     WebKitCSSKeyframesRule(CSSStyleSheet* parent);
 
@@ -92,29 +89,6 @@ private:
     RefPtr<CSSRuleList> m_lstCSSRules;
     AtomicString m_name;
 };
-
-inline bool WebKitCSSKeyframesRule::operator==(const CSSRule& o)
-{
-    if (type() != o.type())
-        return false;
-
-    const WebKitCSSKeyframesRule* rule = static_cast<const WebKitCSSKeyframesRule*>(&o);
-
-    if (m_name != rule->m_name)
-        return false;
-
-    if (m_lstCSSRules && rule->m_lstCSSRules && (m_lstCSSRules->length() != rule->m_lstCSSRules->length()))
-        return false;
-
-    if (m_lstCSSRules && rule->m_lstCSSRules) {
-        for (unsigned i = 0; i < m_lstCSSRules->length(); i++) {
-            if (m_lstCSSRules->item(i) != rule->m_lstCSSRules->item(i))
-                return false;
-        }
-    }
-
-    return true;
-}
 
 } // namespace WebCore
 
