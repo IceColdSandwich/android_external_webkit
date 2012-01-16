@@ -2159,29 +2159,14 @@ END
 
 v8::Persistent<v8::FunctionTemplate> ${className}::GetRawTemplate()
 {
-    V8BindingPerIsolateData* data = V8BindingPerIsolateData::current();
-    V8BindingPerIsolateData::TemplateMap::iterator result = data->rawTemplateMap().find(&info);
-    if (result != data->rawTemplateMap().end())
-        return result->second;
-
-    v8::HandleScope handleScope;
-    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate();
-    data->rawTemplateMap().add(&info, templ);
-    return templ;
+    static v8::Persistent<v8::FunctionTemplate> ${className}RawCache = createRawTemplate();
+    return ${className}RawCache;
 }
 
 v8::Persistent<v8::FunctionTemplate> ${className}::GetTemplate()\
 {
-    V8BindingPerIsolateData* data = V8BindingPerIsolateData::current();
-    V8BindingPerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
-    if (result != data->templateMap().end())
-        return result->second;
-
-    v8::HandleScope handleScope;
-    v8::Persistent<v8::FunctionTemplate> templ =
-        Configure${className}Template(GetRawTemplate());
-    data->templateMap().add(&info, templ);
-    return templ;
+    static v8::Persistent<v8::FunctionTemplate> ${className}Cache = Configure${className}Template(GetRawTemplate());
+    return ${className}Cache;
 }
 
 bool ${className}::HasInstance(v8::Handle<v8::Value> value)

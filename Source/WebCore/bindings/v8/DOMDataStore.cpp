@@ -32,7 +32,6 @@
 #include "DOMDataStore.h"
 
 #include "DOMData.h"
-#include "V8Binding.h"
 
 namespace WebCore {
 
@@ -92,15 +91,26 @@ DOMDataStore::DOMDataStore(DOMData* domData)
 #endif
     , m_domData(domData)
 {
+    WTF::MutexLocker locker(DOMDataStore::allStoresMutex());
+    DOMDataStore::allStores().append(this);
 }
 
 DOMDataStore::~DOMDataStore()
 {
+    WTF::MutexLocker locker(DOMDataStore::allStoresMutex());
+    DOMDataStore::allStores().remove(DOMDataStore::allStores().find(this));
 }
 
 DOMDataList& DOMDataStore::allStores()
 {
-    return V8BindingPerIsolateData::current()->allStores();
+  DEFINE_STATIC_LOCAL(DOMDataList, staticDOMDataList, ());
+  return staticDOMDataList;
+}
+
+WTF::Mutex& DOMDataStore::allStoresMutex()
+{
+    DEFINE_STATIC_LOCAL(WTF::Mutex, staticDOMDataListMutex, ());
+    return staticDOMDataListMutex;
 }
 
 void* DOMDataStore::getDOMWrapperMap(DOMWrapperMapType type)
@@ -146,11 +156,12 @@ void DOMDataStore::weakNodeCallback(v8::Persistent<v8::Value> value, void* domOb
     // Node wrappers must be JS objects.
     v8::Persistent<v8::Object> v8Object = v8::Persistent<v8::Object>::Cast(value);
 
+    WTF::MutexLocker locker(DOMDataStore::allStoresMutex());
     DOMDataList& list = DOMDataStore::allStores();
     for (size_t i = 0; i < list.size(); ++i) {
         DOMDataStore* store = list[i];
-        DOMNodeMapping& nodeMap = store->domNodeMap();
-        if (nodeMap.removeIfPresent(node, v8Object)) {
+        if (store->domNodeMap().removeIfPresent(node, v8Object)) {
+            ASSERT(store->domData()->owningThread() == WTF::currentThread());
             node->deref(); // Nobody overrides Node::deref so it's safe
             return; // There might be at most one wrapper for the node in world's maps
         }

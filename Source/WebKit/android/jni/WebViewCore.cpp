@@ -133,7 +133,6 @@
 #if USE(V8)
 #include "ScriptController.h"
 #include "V8Counters.h"
-#include "V8Binding.h"
 #include <wtf/text/CString.h>
 #endif
 
@@ -486,7 +485,6 @@ WebViewCore::WebViewCore(JNIEnv* env, jobject javaWebViewCore, WebCore::Frame* m
     // libwebcore gets loaded. We now need to associate the WebCore thread with V8 to complete
     // initialisation.
     v8::V8::Initialize();
-    WebCore::V8BindingPerIsolateData::ensureInitialized(v8::Isolate::GetCurrent());
 #endif
 }
 
