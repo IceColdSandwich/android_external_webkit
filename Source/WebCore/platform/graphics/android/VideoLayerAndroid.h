@@ -44,7 +44,7 @@ namespace WebCore {
 // Otherwise will draw a static image.
 // NOTE: These values are matching the ones in HTML5VideoView.java
 // Please keep them in sync when changed here.
-typedef enum {INITIALIZED, PREPARING, PREPARED, PLAYING, RELEASED} PlayerState;
+typedef enum {INITIALIZED, PREPARING, PREPARED, PLAYING, BUFFERING, RELEASED } PlayerState;
 
 class VideoLayerAndroid : public LayerAndroid {
 
@@ -66,6 +66,7 @@ public:
 private:
     GLuint createTextureFromImage(int buttonType);
     void init();
+    void showProgressSpinner(SkRect& innerRect);
     // Surface texture for showing the video is actually allocated in Java side
     // and passed into this native code.
     sp<android::SurfaceTexture> m_surfaceTexture;
