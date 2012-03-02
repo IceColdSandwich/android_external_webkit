@@ -188,8 +188,16 @@ void MediaPlayerPrivate::onEnded()
 {
     m_currentTime = duration();
     m_player->timeChanged();
-    m_paused = true;
-    m_player->playbackStateChanged();
+    // If the loop attribute is set, the current timestamp
+    // is reset to 0 at the end of the playback.
+    // m_currentTime may be modified in timeChanged() and set to 0.
+    if (m_currentTime == 0) {
+        // play() is called in looping case.
+        m_player->play();
+    } else {
+       m_paused = true;
+       m_player->playbackStateChanged();
+    }
     m_networkState = MediaPlayer::Idle;
 }
 
