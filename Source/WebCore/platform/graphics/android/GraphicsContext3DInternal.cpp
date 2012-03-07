@@ -98,6 +98,8 @@ private:
 #define CANVAS_MAX_WIDTH    1280
 #define CANVAS_MAX_HEIGHT   1280
 
+bool GraphicsContext3DInternal::s_loggingEnabled = false;
+
 EGLint GraphicsContext3DInternal::checkEGLError(const char* s)
 {
     EGLint error = eglGetError();
@@ -148,6 +150,8 @@ GraphicsContext3DInternal::GraphicsContext3DInternal(HTMLCanvasElement* canvas,
     , m_extensions(0)
     , m_contextId(0)
 {
+    enableLogging();
+
     LOGWEBGL("GraphicsContext3DInternal() = %p, m_compositingLayer = %p", this, m_compositingLayer);
     m_compositingLayer->ref();
     m_proxy->setGraphicsContext(this);
@@ -1012,5 +1016,13 @@ void GraphicsContext3DInternal::viewport(long x, long y, unsigned long width, un
     m_savedViewport.width = width;
     m_savedViewport.height = height;
 }
+
+void GraphicsContext3DInternal::enableLogging()
+{
+    char value[PROPERTY_VALUE_MAX];
+    property_get("debug.webgl", value, "0");
+    s_loggingEnabled = atoi(value) ? true : false;
+}
+
 }
 #endif // ENABLE(WEBGL)

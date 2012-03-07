@@ -48,18 +48,14 @@
 #include <ui/android_native_buffer.h>
 #include <ui/GraphicBuffer.h>
 
-#include <utils/Log.h>
-
-#undef WEBGL_LOGGING
-//#define WEBGL_LOGGING 1
-#ifdef WEBGL_LOGGING
-#define LOGWEBGL(...) ((void)android_printLog(ANDROID_LOG_DEBUG, "WebGL", __VA_ARGS__))
-#else
-#define LOGWEBGL(...)
-#endif
-
 // This can be increased to 3, for example, if that has a positive impact on performance.
 #define NUM_BUFFERS 2
+
+#include <cutils/properties.h>
+#include <cutils/log.h>
+
+#define LOGWEBGL(...) (GraphicsContext3DInternal::s_loggingEnabled ? \
+        (void)android_printLog(ANDROID_LOG_DEBUG, "WebGL", __VA_ARGS__) : (void)0)
 
 using namespace android;
 
@@ -144,6 +140,8 @@ public:
 
     static EGLint checkEGLError(const char* s);
     static GLint checkGLError(const char* s);
+    static void enableLogging();
+    static bool s_loggingEnabled;
 
 private:
     bool initEGL();
