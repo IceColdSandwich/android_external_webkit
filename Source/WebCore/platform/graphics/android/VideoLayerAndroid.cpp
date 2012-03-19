@@ -142,6 +142,31 @@ GLuint VideoLayerAndroid::createBackgroundTexture()
     return texture;
 }
 
+void VideoLayerAndroid::showProgressSpinner(SkRect& innerRect)
+{
+     // Show the progressing animation, with two rotating circles
+     TransformationMatrix addReverseRotation;
+     TransformationMatrix addRotation = m_drawTransform;
+     addRotation.translate(innerRect.fLeft, innerRect.fTop);
+     addRotation.translate(IMAGESIZE / 2, IMAGESIZE / 2);
+     addReverseRotation = addRotation;
+     addRotation.rotate(m_rotateDegree);
+     addRotation.translate(-IMAGESIZE / 2, -IMAGESIZE / 2);
+
+     SkRect size = SkRect::MakeWH(innerRect.width(), innerRect.height());
+     TilesManager::instance()->shader()->drawLayerQuad(addRotation, size,
+                                                       m_spinnerOuterTextureId,
+                                                       1, true);
+
+     addReverseRotation.rotate(-m_rotateDegree);
+     addReverseRotation.translate(-IMAGESIZE / 2, -IMAGESIZE / 2);
+     TilesManager::instance()->shader()->drawLayerQuad(addReverseRotation, size,
+                                                       m_spinnerInnerTextureId,
+                                                       1, true);
+
+     m_rotateDegree += ROTATESTEP;
+}
+
 bool VideoLayerAndroid::drawGL()
 {
     // Lazily allocated the textures.
@@ -165,34 +190,12 @@ bool VideoLayerAndroid::drawGL()
     // Draw the poster image, the progressing image or the Video depending
     // on the player's state.
     if (m_playerState == PREPARING) {
-        // Show the progressing animation, with two rotating circles
+        // Show spinner while preparing, with grey background
         TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, rect,
                                                           m_backgroundTextureId,
                                                           1, true);
-
-        TransformationMatrix addReverseRotation;
-        TransformationMatrix addRotation = m_drawTransform;
-        addRotation.translate(innerRect.fLeft, innerRect.fTop);
-        addRotation.translate(IMAGESIZE / 2, IMAGESIZE / 2);
-        addReverseRotation = addRotation;
-        addRotation.rotate(m_rotateDegree);
-        addRotation.translate(-IMAGESIZE / 2, -IMAGESIZE / 2);
-
-        SkRect size = SkRect::MakeWH(innerRect.width(), innerRect.height());
-        TilesManager::instance()->shader()->drawLayerQuad(addRotation, size,
-                                                          m_spinnerOuterTextureId,
-                                                          1, true);
-
-        addReverseRotation.rotate(-m_rotateDegree);
-        addReverseRotation.translate(-IMAGESIZE / 2, -IMAGESIZE / 2);
-
-        TilesManager::instance()->shader()->drawLayerQuad(addReverseRotation, size,
-                                                          m_spinnerInnerTextureId,
-                                                          1, true);
-
-        m_rotateDegree += ROTATESTEP;
-
-    } else if (m_playerState == PLAYING && m_surfaceTexture.get()) {
+        showProgressSpinner(innerRect);
+    } else if (((m_playerState == PLAYING) || (m_playerState == BUFFERING)) && m_surfaceTexture.get()) {
         // Show the real video.
         m_surfaceTexture->updateTexImage();
         m_surfaceTexture->getTransformMatrix(surfaceMatrix);
@@ -201,6 +204,10 @@ bool VideoLayerAndroid::drawGL()
         TilesManager::instance()->shader()->drawVideoLayerQuad(m_drawTransform,
                                                                surfaceMatrix,
                                                                rect, textureId);
+        if (m_playerState == BUFFERING) {
+            // Show the spinner on top of the video texture
+            showProgressSpinner(innerRect);
+        }
         TilesManager::instance()->videoLayerManager()->updateMatrix(uniqueId(),
                                                                     surfaceMatrix);
     } else {
