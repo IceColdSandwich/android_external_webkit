@@ -1,5 +1,6 @@
 /*
  * Copyright 2011 The Android Open Source Project
+ * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -167,6 +168,16 @@ void VideoLayerAndroid::showProgressSpinner(SkRect& innerRect)
      m_rotateDegree += ROTATESTEP;
 }
 
+// Calculate the innerRect bounds centered inside the boundsRect
+static bool calculateInnerRectBounds(const SkRect& boundsRect, SkRect& innerRect) {
+    // Only draw the poster or spinner icon if the video bounds can contain it
+    if (boundsRect.contains(innerRect)) {
+        innerRect.offset((boundsRect.width() - innerRect.width()) / 2 , (boundsRect.height() - innerRect.height()) / 2);
+        return true;
+    }
+    return false;
+}
+
 bool VideoLayerAndroid::drawGL()
 {
     // Lazily allocated the textures.
@@ -181,20 +192,17 @@ bool VideoLayerAndroid::drawGL()
     SkRect rect = SkRect::MakeSize(getSize());
     GLfloat surfaceMatrix[16];
 
-    SkRect innerRect = SkRect(buttonRect);
-    if (innerRect.contains(rect))
-        innerRect = rect;
-
-    innerRect.offset((rect.width() - IMAGESIZE) / 2 , (rect.height() - IMAGESIZE) / 2);
-
     // Draw the poster image, the progressing image or the Video depending
     // on the player's state.
     if (m_playerState == PREPARING) {
-        // Show spinner while preparing, with grey background
-        TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, rect,
-                                                          m_backgroundTextureId,
-                                                          1, true);
-        showProgressSpinner(innerRect);
+        SkRect innerRect = SkRect(buttonRect);
+        if (calculateInnerRectBounds(rect, innerRect)) {
+            // Show spinner while preparing, with grey background
+            TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, rect,
+                                                              m_backgroundTextureId,
+                                                              1, true);
+            showProgressSpinner(innerRect);
+        }
     } else if (((m_playerState == PLAYING) || (m_playerState == BUFFERING)) && m_surfaceTexture.get()) {
         // Show the real video.
         m_surfaceTexture->updateTexImage();
@@ -205,8 +213,11 @@ bool VideoLayerAndroid::drawGL()
                                                                surfaceMatrix,
                                                                rect, textureId);
         if (m_playerState == BUFFERING) {
-            // Show the spinner on top of the video texture
-            showProgressSpinner(innerRect);
+            SkRect innerRect = SkRect(buttonRect);
+            if (calculateInnerRectBounds(rect, innerRect)) {
+                // Show the spinner on top of the video texture
+                showProgressSpinner(innerRect);
+            }
         }
         TilesManager::instance()->videoLayerManager()->updateMatrix(uniqueId(),
                                                                     surfaceMatrix);
@@ -221,13 +232,16 @@ bool VideoLayerAndroid::drawGL()
                                                                matrix,
                                                                rect, textureId);
         } else {
-            // Show the static poster b/c there is no screen shot available.
-            TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, rect,
-                                                              m_backgroundTextureId,
-                                                              1, true);
-            TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, innerRect,
-                                                              m_posterTextureId,
-                                                              1, true);
+            SkRect innerRect = SkRect(buttonRect);
+            if (calculateInnerRectBounds(rect, innerRect)) {
+                // Show the static poster b/c there is no screen shot available.
+                TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, rect,
+                                                                  m_backgroundTextureId,
+                                                                  1, true);
+                TilesManager::instance()->shader()->drawLayerQuad(m_drawTransform, innerRect,
+                                                                  m_posterTextureId,
+                                                                  1, true);
+            }
         }
     }
 
