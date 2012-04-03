@@ -102,6 +102,7 @@
 #include "RenderThemeAndroid.h"
 #include "RenderView.h"
 #include "ResourceRequest.h"
+#include "RuntimeEnabledFeatures.h"
 #include "SchemeRegistry.h"
 #include "SelectionController.h"
 #include "Settings.h"
@@ -488,6 +489,12 @@ WebViewCore::WebViewCore(JNIEnv* env, jobject javaWebViewCore, WebCore::Frame* m
     v8::V8::Initialize();
     WebCore::V8BindingPerIsolateData::ensureInitialized(v8::Isolate::GetCurrent());
 #endif
+
+    // Configure any RuntimeEnabled features that we need to change from their default now.
+    // See WebCore/bindings/generic/RuntimeEnabledFeatures.h
+
+    // HTML5 History API
+    RuntimeEnabledFeatures::setPushStateEnabled(true);
 }
 
 WebViewCore::~WebViewCore()
@@ -682,10 +689,20 @@ void WebViewCore::recordPictureSet(PictureSet* content)
         content->clear();
 
 #if USE(ACCELERATED_COMPOSITING)
-    // Detects if the content size has changed
-    bool contentSizeChanged = false;
-    if (content->width() != width || content->height() != height)
-        contentSizeChanged = true;
+    // The invals are not always correct when the content size has changed. For
+    // now, let's just reset the inval so that it invalidates the entire content
+    // -- the pictureset will be fully repainted, tiles will be marked dirty and
+    // will have to be repainted.
+
+    // FIXME: the webkit invals ought to have been enough...
+    if (content->width() != width || content->height() != height) {
+        SkIRect r;
+        r.fLeft = 0;
+        r.fTop = 0;
+        r.fRight = width;
+        r.fBottom = height;
+        m_addInval.setRect(r);
+    }
 #endif
 
     content->setDimensions(width, height, &m_addInval);
@@ -709,23 +726,6 @@ void WebViewCore::recordPictureSet(PictureSet* content)
 
     // Rebuild the pictureset (webkit repaint)
     rebuildPictureSet(content);
-
-#if USE(ACCELERATED_COMPOSITING)
-    // We repainted the pictureset, but the invals are not always correct when
-    // the content size did change. For now, let's just reset the
-    // inval we will pass to the UI so that it invalidates the entire
-    // content -- tiles will be marked dirty and will have to be repainted.
-    // FIXME: the webkit invals ought to have been enough...
-    if (contentSizeChanged) {
-        SkIRect r;
-        r.fLeft = 0;
-        r.fTop = 0;
-        r.fRight = width;
-        r.fBottom = height;
-        m_addInval.setRect(r);
-    }
-#endif
-
     } // WebViewCoreRecordTimeCounter
 
     WebCore::Node* oldFocusNode = currentFocus();
