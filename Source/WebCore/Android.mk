@@ -1273,7 +1273,7 @@ endif
 ifeq ($(call is-chipset-prefix-in-board-platform,msm7627),true)
   LOCAL_CFLAGS += -DVIDEO_PLATFORM_ID=2
 else
-  ifeq ($(call is-chipset-in-board-platform,msm7630),true)
+  ifeq ($(TARGET_BOARD_PLATFORM),msm7x30)
     LOCAL_CFLAGS += -DVIDEO_PLATFORM_ID=3
   else
     ifeq ($(call is-board-platform,msm8660),true)
