@@ -264,19 +264,24 @@ public:
         checkException(env);
     }
 
+    void onPrepared(int duration, int width, int height)
+    {
+        m_networkState = MediaPlayer::Loaded;
+        m_player->networkStateChanged();
+        m_readyState = MediaPlayer::HaveEnoughData;
+        m_player->readyStateChanged();
+
+        // Don't update width and height here. For HLS video, width and
+        // height are both 0 when onPrepared() is called. User would have
+        // no way to access the video control to start the video if width
+        // and height are updated to 0 x 0. Only update width and height
+        // when updateSizeAndDuration() is called.
+        updateDuration(duration);
+    }
+
     void updateSizeAndDuration(int duration, int width, int height)
     {
-        if (duration > 0 && m_durationUnknown) {
-            m_duration = duration / 1000.0f;
-            m_durationUnknown = false;
-            m_player->durationChanged();
-        } else if (m_durationUnknown) {
-            // If the duration is unknown, Android Media Player returns 0,
-            // The duration should be set to positive infinity
-            // according to the HTML5 video spec in this case
-            m_duration = std::numeric_limits<float>::infinity();
-            m_player->durationChanged();
-        }
+        updateDuration(duration);
 
         if (width != 0 && height != 0 && m_naturalSizeUnknown) {
             m_naturalSize = IntSize(width, height);
@@ -285,6 +290,20 @@ public:
             TilesManager::instance()->videoLayerManager()->updateVideoLayerSize(
                 m_player->platformLayer()->uniqueId(), width*height);
         }
+    }
+
+    void updateDuration(int duration)
+    {
+        if (duration > 0 && m_durationUnknown) {
+            m_duration = duration / 1000.0f;
+            m_durationUnknown = false;
+        } else if (m_durationUnknown) {
+            // If the duration is unknown, Android Media Player returns 0,
+            // The duration should be set to positive infinity
+            // according to the HTML5 video spec in this case
+            m_duration = std::numeric_limits<float>::infinity();
+        }
+        m_player->durationChanged();
     }
 
     bool canLoadPoster() const { return true; }
