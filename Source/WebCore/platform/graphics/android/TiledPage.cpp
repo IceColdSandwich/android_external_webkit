@@ -263,9 +263,9 @@ void TiledPage::prepare(bool goingDown, bool goingLeft, const SkIRect& tileBound
     float maxBaseX = m_glWebViewState->baseContentWidth() * m_scale / TilesManager::tileWidth();
     float maxBaseY = m_glWebViewState->baseContentHeight() * m_scale / TilesManager::tileHeight();
     int maxX = std::max(static_cast<int>(ceilf(maxBaseX)),
-                        m_glWebViewState->viewportTileBounds().width());
+                        m_glWebViewState->viewportTileBounds().fRight);
     int maxY = std::max(static_cast<int>(ceilf(maxBaseY)),
-                        m_glWebViewState->viewportTileBounds().height());
+                        m_glWebViewState->viewportTileBounds().fBottom);
 
     // adjust perimeter to not go outside cropped region
     if (firstTileX < 0) {
