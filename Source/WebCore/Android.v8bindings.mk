@@ -51,14 +51,12 @@ BINDING_C_INCLUDES += \
 LOCAL_SRC_FILES += \
 	bindings/ScriptControllerBase.cpp \
 	\
-	bindings/v8/ChildThreadDOMData.cpp \
 	bindings/v8/DateExtension.cpp \
 	bindings/v8/DOMData.cpp \
 	bindings/v8/DOMDataStore.cpp \
 	bindings/v8/DOMWrapperWorld.cpp \
 	bindings/v8/IDBBindingUtilities.cpp \
 	bindings/v8/IsolatedWorld.cpp \
-	bindings/v8/MainThreadDOMData.cpp \
 	bindings/v8/NPV8Object.cpp \
 	bindings/v8/RetainedDOMInfo.cpp \
 	bindings/v8/ScheduledAction.cpp \

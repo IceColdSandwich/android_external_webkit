@@ -46,7 +46,7 @@ namespace WebCore {
 //
 class StaticDOMDataStore : public DOMDataStore {
 public:
-    StaticDOMDataStore(DOMData*);
+    StaticDOMDataStore();
     virtual ~StaticDOMDataStore();
 
 private:
@@ -61,4 +61,3 @@ private:
 } // namespace WebCore
 
 #endif // StaticDOMDataStore_h
-

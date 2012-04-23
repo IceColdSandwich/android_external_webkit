@@ -33,14 +33,13 @@
 
 #include "DOMData.h"
 #include "DOMDataStore.h"
-#include "MainThreadDOMData.h"
 #include "ScopedDOMDataStore.h"
 #include "V8Binding.h"
 
 namespace WebCore {
 
 DOMDataStoreHandle::DOMDataStoreHandle()
-    : m_store(new ScopedDOMDataStore(DOMData::getCurrent()))
+    : m_store(adoptPtr(new ScopedDOMDataStore()))
 {
     V8BindingPerIsolateData::current()->registerDOMDataStore(m_store.get());
 }
@@ -50,21 +49,13 @@ DOMDataStoreHandle::~DOMDataStoreHandle()
     V8BindingPerIsolateData::current()->unregisterDOMDataStore(m_store.get());
 }
 
-static bool fasterDOMStoreAccess = false;
-
 static inline DOMDataStore& getDOMDataStore()
 {
-    if (LIKELY(fasterDOMStoreAccess)) {
-        ASSERT(WTF::isMainThread());
-        return MainThreadDOMData::getCurrentMainThreadStore();
-    }
-
-    return DOMData::getCurrent()->getStore();
+    return DOMData::getCurrentStore();
 }
 
 void enableFasterDOMStoreAccess()
 {
-    fasterDOMStoreAccess = true;
 }
 
 DOMNodeMapping& getDOMNodeMap()

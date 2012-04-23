@@ -83,14 +83,13 @@ namespace WebCore {
 //    them.
 
 
-DOMDataStore::DOMDataStore(DOMData* domData)
+DOMDataStore::DOMDataStore()
     : m_domNodeMap(0)
     , m_domObjectMap(0)
     , m_activeDomObjectMap(0)
 #if ENABLE(SVG)
     , m_domSvgElementInstanceMap(0)
 #endif
-    , m_domData(domData)
 {
 }
 

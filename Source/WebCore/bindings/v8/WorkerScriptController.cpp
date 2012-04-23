@@ -55,7 +55,6 @@ WorkerScriptController::WorkerScriptController(WorkerContext* workerContext)
     : m_workerContext(workerContext)
     , m_isolate(v8::Isolate::New())
     , m_executionForbidden(false)
-    , m_DOMDataStore(DOMData::getCurrent())
 {
     V8BindingPerIsolateData* data = V8BindingPerIsolateData::create(m_isolate);
     data->allStores().append(&m_DOMDataStore);
