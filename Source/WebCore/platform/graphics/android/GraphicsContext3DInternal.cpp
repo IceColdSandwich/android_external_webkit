@@ -2,6 +2,7 @@
  * Copyright (C) 2011, 2012, Sony Ericsson Mobile Communications AB
  * Copyright (C) 2012 Sony Mobile Communications AB
  * All rights reserved.
+ * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -143,6 +144,9 @@ GraphicsContext3DInternal::GraphicsContext3DInternal(HTMLCanvasElement* canvas,
     , m_config(0)
     , m_surface(EGL_NO_SURFACE)
     , m_context(EGL_NO_CONTEXT)
+    , m_fbo()
+    , m_currentFBO(0)
+    , m_frontFBO(0)
     , m_syncThread(0)
     , m_threadState(THREAD_STATE_STOPPED)
     , m_syncTimer(this, &GraphicsContext3DInternal::syncTimerFired)
@@ -320,6 +324,18 @@ bool GraphicsContext3DInternal::createContext(bool createEGLContext)
     }
 
     makeContextCurrent();
+
+    // WebGL is only supported for Adreno 3xx+
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    String rendererStr(reinterpret_cast<const char*>(renderer));
+    static const String pattern = "Adreno (TM) ";
+    rendererStr.replace(pattern, "");
+    int versionNumber = atoi(rendererStr.utf8().data());
+    if (versionNumber < 300) {
+        deleteContext(createEGLContext);
+        return false;
+    }
+
     for (int i = 0; i < NUM_BUFFERS; i++) {
         FBO* tmp = FBO::createFBO(m_dpy, m_width > 0 ? m_width : 1, m_height > 0 ? m_height : 1);
         if (tmp == 0) {

@@ -64,8 +64,12 @@
 #ifdef PROTEUS_DEVICE_API
 // proteus:
 #include "NodeProxy.h"
-
 #endif
+
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#define LOGWEBGL(...) ((void)android_printLog(ANDROID_LOG_DEBUG, "WebGL", __VA_ARGS__))
+
 namespace android {
 
 static const int permissionFlags660 = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
@@ -613,8 +617,106 @@ public:
         WebCore::NodeProxy::setAppDataPath(jstringToWtfString(env, str));
 #endif
     }
+
+    static bool IsWebGLAvailable(JNIEnv* env, jobject obj)
+    {
+#if !ENABLE(WEBGL)
+        return false;
+#else
+        if (s_rendererWebGLSupport != UNVERIFIED)
+            return s_rendererWebGLSupport == SUPPORTED;
+
+        // Check if the renderer supports WebGL.
+        EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        if (display == EGL_NO_DISPLAY)
+            return false;
+
+        EGLContext previousContext = eglGetCurrentContext();
+        EGLSurface previousSurface = eglGetCurrentSurface(EGL_DRAW);
+        EGLDisplay previousDisplay = eglGetCurrentDisplay();
+
+        EGLint     majorVersion;
+        EGLint     minorVersion;
+
+        if (eglInitialize(display, &majorVersion, &minorVersion) != EGL_TRUE)
+            return false;
+
+        EGLint* config_attribs = new EGLint[11];
+        int p = 0;
+        config_attribs[p++] = EGL_BLUE_SIZE;
+        config_attribs[p++] = 8;
+        config_attribs[p++] = EGL_GREEN_SIZE;
+        config_attribs[p++] = 8;
+        config_attribs[p++] = EGL_RED_SIZE;
+        config_attribs[p++] = 8;
+        config_attribs[p++] = EGL_SURFACE_TYPE;
+        config_attribs[p++] = EGL_PBUFFER_BIT;
+        config_attribs[p++] = EGL_RENDERABLE_TYPE;
+        config_attribs[p++] = EGL_OPENGL_ES2_BIT;
+        config_attribs[p] = EGL_NONE;
+
+        EGLConfig config;
+        EGLint num_configs = 0;
+
+        if (eglChooseConfig(display, config_attribs, &config, 1, &num_configs) != EGL_TRUE) {
+            LOGWEBGL("Could not choose config to verify renderer for WebGL support.");
+            return false;
+        }
+
+        EGLint context_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+        EGLint surface_attribs[] = { EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
+
+        EGLSurface surface = eglCreatePbufferSurface(display, config, surface_attribs);
+        EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_attribs);
+
+        if (context == EGL_NO_CONTEXT) {
+            LOGWEBGL("Could not initialize context to verify renderer for WebGL support.");
+            deleteContext(display, surface, context);
+            return false;
+        }
+
+        eglMakeCurrent(display, surface, surface, context);
+
+        const GLubyte* renderer = glGetString(GL_RENDERER);
+
+        String rendererStr(reinterpret_cast<const char*>(renderer));
+        static const String pattern = "Adreno (TM) ";
+        rendererStr.replace(pattern, "");
+        int versionNumber = atoi(rendererStr.utf8().data());
+
+        bool isSupported = versionNumber >= 300;
+        if (!isSupported)
+            LOGWEBGL("GL_RENDERER: %s. WebGL is only supported for Adreno 3xx+", renderer);
+
+        deleteContext(display, surface, context);
+        s_rendererWebGLSupport = isSupported? SUPPORTED : UNSUPPORTED;
+
+        eglMakeCurrent(previousDisplay, previousSurface, previousSurface, previousContext);
+        return isSupported;
+#endif
+    }
+
+    enum RendererWebGLSupport { UNVERIFIED, SUPPORTED, UNSUPPORTED };
+
+private:
+    static void deleteContext(EGLDisplay display, EGLSurface surface, EGLContext context)
+    {
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (surface != EGL_NO_SURFACE) {
+            eglDestroySurface(display, surface);
+            surface = EGL_NO_SURFACE;
+        }
+        if (context != EGL_NO_CONTEXT) {
+            eglDestroyContext(display, context);
+            context = EGL_NO_CONTEXT;
+        }
+        display = EGL_NO_DISPLAY;
+    }
+
+    static RendererWebGLSupport s_rendererWebGLSupport;
 };
 
+WebSettings::RendererWebGLSupport WebSettings::s_rendererWebGLSupport = WebSettings::UNVERIFIED;
 
 //-------------------------------------------------------------
 // JNI registration
@@ -622,7 +724,9 @@ public:
 
 static JNINativeMethod gWebSettingsMethods[] = {
     { "nativeSync", "(I)V",
-        (void*) WebSettings::Sync }
+        (void*) WebSettings::Sync },
+    { "nativeIsWebGLAvailable", "()Z",
+        (void*) WebSettings::IsWebGLAvailable }
 };
 
 int registerWebSettings(JNIEnv* env)
