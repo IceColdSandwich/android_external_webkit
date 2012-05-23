@@ -873,6 +873,11 @@ void GraphicsContext3DInternal::paintRenderingResultsToCanvas(CanvasRenderingCon
 PassRefPtr<ImageData> GraphicsContext3DInternal::paintRenderingResultsToImageData()
 {
     LOGWEBGL("paintRenderingResultsToImageData()");
+
+    // Reading premultiplied alpha would involve unpremultiplying, which is lossy.
+    if (m_attrs.premultipliedAlpha)
+        return 0;
+
     RefPtr<ImageData> imageData = ImageData::create(IntSize(m_width, m_height));
     unsigned char* pixels = imageData->data()->data()->data();
 

@@ -775,6 +775,7 @@ LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
 	platform/image-decoders/gif/GIFImageReader.cpp \
 	\
 	platform/image-encoders/skia/JPEGImageEncoder.cpp \
+	platform/image-encoders/skia/PNGImageEncoder.cpp \
 	\
 	platform/leveldb/LevelDBDatabase.cpp \
 	platform/leveldb/LevelDBIterator.cpp \

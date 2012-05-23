@@ -167,9 +167,7 @@ LOCAL_C_INCLUDES := \
 	frameworks/base/core/jni/android/graphics \
 	frameworks/base/include
 
-ifeq ($(ENABLE_WEBGL),true)
 LOCAL_C_INCLUDES += external/libpng
-endif
 
 # Add Source/ for the include of <JavaScriptCore/config.h> from WebCore/config.h
 LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
@@ -454,7 +452,7 @@ ifeq ($(SUPPORT_COMPLEX_SCRIPTS),true)
 LOCAL_C_INCLUDES := $(LOCAL_C_INCLUDES) \
 	external/harfbuzz/src \
 	external/harfbuzz/contrib
-LOCAL_SHARED_LIBRARIES += libharfbuzz
+LOCAL_SHARED_LIBRARIES += libharfbuzz libjpeg
 LOCAL_CFLAGS += -DSUPPORT_COMPLEX_SCRIPTS=1
 endif
 

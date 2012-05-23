@@ -499,9 +499,7 @@ String HTMLCanvasElement::toDataURL(const String& mimeType, const double* qualit
     if (mimeType.isNull() || !MIMETypeRegistry::isSupportedImageMIMETypeForEncoding(lowercaseMimeType))
         lowercaseMimeType = "image/png";
 
-#if USE(CG) || (USE(SKIA) && !PLATFORM(ANDROID))
-    // FIXME: Consider using this code path on Android. http://b/4572024
-    // Try to get ImageData first, as that may avoid lossy conversions.
+#if USE(CG) || (USE(SKIA) || PLATFORM(ANDROID))
     RefPtr<ImageData> imageData = getImageData();
 
     if (imageData)
