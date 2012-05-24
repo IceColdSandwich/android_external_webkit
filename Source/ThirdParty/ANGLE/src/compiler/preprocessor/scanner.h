@@ -1,6 +1,5 @@
 /****************************************************************************\
 Copyright (c) 2002, NVIDIA Corporation.
-Copyright (C) 2012 Sony Mobile Communications AB
 
 NVIDIA Corporation("NVIDIA") supplies this software to you in
 consideration of your agreement to the following terms, and your use,
@@ -49,10 +48,7 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(__SCANNER_H)
 #define __SCANNER_H 1
 
-// These lengths do not include the NULL terminator.
-#define MAX_SYMBOL_NAME_LEN 256
-#define MAX_STRING_LEN 511
-
+#include "compiler/preprocessor/length_limits.h"
 #include "compiler/preprocessor/parser.h"
 
 // Not really atom table stuff but needed first...

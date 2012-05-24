@@ -27,12 +27,16 @@
 
 # Compiler src
 LOCAL_SRC_FILES := \
+    BuiltInFunctionEmulator.cpp \
     Compiler.cpp \
+    DetectRecursion.cpp \
+    ForLoopUnroll.cpp \
     InfoSink.cpp \
     Initialize.cpp \
     InitializeDll.cpp \
     IntermTraverse.cpp \
     Intermediate.cpp \
+    MapLongVariableNames.cpp \
     ParseHelper.cpp \
     PoolAlloc.cpp \
     QualifierAlive.cpp \
@@ -50,9 +54,12 @@ LOCAL_SRC_FILES := \
 # Code generator
 LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
     CodeGenGLSL.cpp \
+    OutputESSL.cpp \
     OutputGLSL.cpp \
+    OutputGLSLBase.cpp \
+    TranslatorESSL.cpp \
     TranslatorGLSL.cpp \
-    VersionGLSL.cpp
+    VersionGLSL.cpp \
 
 # Generated files
 LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
