@@ -325,17 +325,6 @@ bool GraphicsContext3DInternal::createContext(bool createEGLContext)
 
     makeContextCurrent();
 
-    // WebGL is only supported for Adreno 3xx+
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    String rendererStr(reinterpret_cast<const char*>(renderer));
-    static const String pattern = "Adreno (TM) ";
-    rendererStr.replace(pattern, "");
-    int versionNumber = atoi(rendererStr.utf8().data());
-    if (versionNumber < 300) {
-        deleteContext(createEGLContext);
-        return false;
-    }
-
     for (int i = 0; i < NUM_BUFFERS; i++) {
         FBO* tmp = FBO::createFBO(m_dpy, m_width > 0 ? m_width : 1, m_height > 0 ? m_height : 1);
         if (tmp == 0) {
