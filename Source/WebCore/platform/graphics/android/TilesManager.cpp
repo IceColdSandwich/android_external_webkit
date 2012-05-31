@@ -116,11 +116,6 @@ TilesManager::TilesManager()
     m_pixmapsGenerationThread->run("TexturesGenerator");
 }
 
-int TilesManager::getTextureManagerThreadID()
-{
-    return m_pixmapsGenerationThread->m_threadID;
-}
-
 void TilesManager::allocateTiles()
 {
     int nbTexturesToAllocate = m_maxTextureCount - m_textures.size();
