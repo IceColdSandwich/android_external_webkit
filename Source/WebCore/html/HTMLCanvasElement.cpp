@@ -2,6 +2,8 @@
  * Copyright (C) 2004, 2006, 2007 Apple Inc. All rights reserved.
  * Copyright (C) 2007 Alp Toker <alp@atoker.com>
  * Copyright (C) 2010 Torch Mobile (Beijing) Co. Ltd. All rights reserved.
+ * Copyright (C) 2011, 2012 Sony Ericsson Mobile Communications AB
+ * Copyright (C) 2012 Sony Mobile Communications AB
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -157,6 +159,11 @@ HTMLCanvasElement::~HTMLCanvasElement()
     CanvasLayerAndroid::markGLAssetsForRemoval(id);
     delete m_canvasLayer;
     SLOGD("++++++++++++++++ Deleting the canvas with id %d", id);
+
+#if ENABLE(WEBGL)
+    document()->unregisterForDocumentActivationCallbacks(this);
+    document()->unregisterForDocumentSuspendCallbacks(this);
+#endif
 #endif
 }
 
@@ -247,6 +254,11 @@ CanvasRenderingContext* HTMLCanvasElement::getContext(const String& type, Canvas
                 if (m_context) {
                     // Need to make sure a RenderLayer and compositing layer get created for the Canvas
                     setNeedsStyleRecalc(SyntheticStyleChange);
+#if PLATFORM(ANDROID)
+                    document()->registerForDocumentActivationCallbacks(this);
+                    document()->registerForDocumentSuspendCallbacks(this);
+                    document()->setContainsWebGLContent(true);
+#endif
                 }
             }
             return m_context.get();
@@ -335,7 +347,8 @@ void HTMLCanvasElement::paint(GraphicsContext* context, const IntRect& r)
         ImageBuffer* imageBuffer = buffer();
         if (imageBuffer) {
 #if PLATFORM(ANDROID)
-    if (imageBuffer->drawsUsingRecording()) {
+    bool is3D = m_context && m_context->is3d();
+    if (!is3D && imageBuffer->drawsUsingRecording()) {
         // The canvas will draw onto a recording canvas. We want to pass the
         // recorded canvas content onto the GraphicsLayerAndroid recording
         // canvas.
@@ -360,7 +373,6 @@ void HTMLCanvasElement::paint(GraphicsContext* context, const IntRect& r)
         m_canUseGpuRendering = false;
     }
 #endif
-
             if (m_presentedImage)
                 context->drawImage(m_presentedImage.get(), ColorSpaceDeviceRGB, r);
             else if (imageBuffer->drawsUsingCopy())
@@ -408,6 +420,40 @@ bool HTMLCanvasElement::is3D() const
 {
     return m_context && m_context->is3d();
 }
+
+#if PLATFORM(ANDROID)
+void HTMLCanvasElement::documentDidBecomeActive()
+{
+    if (m_context && m_context->is3d()) {
+        WebGLRenderingContext* context3D = static_cast<WebGLRenderingContext*>(m_context.get());
+        context3D->recreateSurface();
+    }
+}
+
+void HTMLCanvasElement::documentWillBecomeInactive()
+{
+    if (m_context && m_context->is3d()) {
+        WebGLRenderingContext* context3D = static_cast<WebGLRenderingContext*>(m_context.get());
+        context3D->releaseSurface();
+    }
+}
+
+void HTMLCanvasElement::documentWasSuspended()
+{
+    if (m_context && m_context->is3d()) {
+        WebGLRenderingContext* context3D = static_cast<WebGLRenderingContext*>(m_context.get());
+        context3D->releaseSurface();
+    }
+}
+
+void HTMLCanvasElement::documentWillResume()
+{
+    if (m_context && m_context->is3d()) {
+        WebGLRenderingContext* context3D = static_cast<WebGLRenderingContext*>(m_context.get());
+        context3D->recreateSurface();
+    }
+}
+#endif
 #endif
 
 void HTMLCanvasElement::makeRenderingResultsAvailable()

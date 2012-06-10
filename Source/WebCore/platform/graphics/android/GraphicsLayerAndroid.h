@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2011, Sony Ericsson Mobile Communications AB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +82,10 @@ public:
     virtual void setNeedsDisplay();
     virtual void setNeedsDisplayInRect(const FloatRect&);
 
+#if ENABLE(WEBGL)
+    virtual void setContentsNeedsDisplay();
+#endif
+
     virtual bool addAnimation(const KeyframeValueList& valueList,
                               const IntSize& boxSize,
                               const Animation* anim,
@@ -105,7 +110,10 @@ public:
 
     virtual void setContentsToImage(Image*);
     virtual void setContentsToMedia(PlatformLayer*);
+#if ENABLE(WEBGL)
     virtual void setContentsToCanvas(PlatformLayer*);
+#endif
+    virtual void setContentsToGPUCanvas(PlatformLayer*);
     virtual PlatformLayer* platformLayer() const;
 
     void pauseDisplay(bool state);
@@ -150,6 +158,10 @@ private:
     bool m_haveContents;
     bool m_newImage;
     Image* m_image;
+
+#if ENABLE(WEBGL)
+    bool m_is3DCanvas;
+#endif
 
     SkRegion m_dirtyRegion;
 

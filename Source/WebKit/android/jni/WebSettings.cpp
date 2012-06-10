@@ -1,6 +1,7 @@
 /*
  * Copyright 2007, The Android Open Source Project
  * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+ * Copyright (C) 2011, Sony Ericsson Mobile Communications AB
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -596,6 +597,10 @@ public:
         // proteus: provide the app private data path to node
         str = (jstring)env->GetObjectField(obj, gFieldIds->mDataPath);
         WebCore::NodeProxy::setAppDataPath(jstringToWtfString(env, str));
+#endif
+
+#if ENABLE(WEBGL)
+        s->setWebGLEnabled(false);
 #endif
     }
 };

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2011, Sony Ericsson Mobile Communications AB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +122,9 @@ GraphicsLayerAndroid::GraphicsLayerAndroid(GraphicsLayerClient* client) :
     m_haveContents(false),
     m_newImage(false),
     m_image(0),
+#if ENABLE(WEBGL)
+    m_is3DCanvas(false),
+#endif
     m_foregroundLayer(0),
     m_foregroundClipLayer(0)
 {
@@ -454,6 +458,14 @@ void GraphicsLayerAndroid::setNeedsDisplay()
     FloatRect rect(0, 0, m_size.width(), m_size.height());
     setNeedsDisplayInRect(rect);
 }
+
+#if ENABLE(WEBGL)
+void GraphicsLayerAndroid::setContentsNeedsDisplay()
+{
+    if (m_is3DCanvas)
+        setNeedsDisplay();
+}
+#endif
 
 // Helper to set and clear the painting phase as well as auto restore the
 // original phase.
@@ -897,12 +909,11 @@ void GraphicsLayerAndroid::setContentsToMedia(PlatformLayer* mediaLayer)
     }
 }
 
+#if ENABLE(WEBGL)
 void GraphicsLayerAndroid::setContentsToCanvas(PlatformLayer* canvasLayer)
 {
     if (m_contentLayer != canvasLayer && canvasLayer) {
-
-        // TODO add a copy method to LayerAndroid to sync everything
-        // copy data from the original content layer to the new one
+        // Copy data from the original content layer to the new one
         canvasLayer->setPosition(m_contentLayer->getPosition().fX,
                                 m_contentLayer->getPosition().fY);
         canvasLayer->setSize(m_contentLayer->getWidth(), m_contentLayer->getHeight());
@@ -912,16 +923,39 @@ void GraphicsLayerAndroid::setContentsToCanvas(PlatformLayer* canvasLayer)
         m_contentLayer->unref();
         m_contentLayer = canvasLayer;
 
-        // If the parent exists then notify it to re-sync it's children
-        if (m_parent) {
-            GraphicsLayerAndroid* parent = static_cast<GraphicsLayerAndroid*>(m_parent);
-            parent->m_needsSyncChildren = true;
-        }
         m_needsSyncChildren = true;
+        m_is3DCanvas = true;
 
-        setNeedsDisplay();
-        askForSync();
+        setDrawsContent(true);
     }
+}
+#endif
+
+// TODO: Remove when canvas acceleration starts using the WebGLRenderingContext.
+void GraphicsLayerAndroid::setContentsToGPUCanvas(PlatformLayer* canvasLayer)
+{
+    if (m_contentLayer == canvasLayer || !canvasLayer)
+        return;
+
+    // Copy data from the original content layer to the new one
+    canvasLayer->setPosition(m_contentLayer->getPosition().fX,
+            m_contentLayer->getPosition().fY);
+    canvasLayer->setSize(m_contentLayer->getWidth(), m_contentLayer->getHeight());
+    canvasLayer->setDrawTransform(*m_contentLayer->drawTransform());
+
+    canvasLayer->ref();
+    m_contentLayer->unref();
+    m_contentLayer = canvasLayer;
+
+    // If the parent exists then notify it to re-sync it's children
+    if (m_parent) {
+        GraphicsLayerAndroid* parent = static_cast<GraphicsLayerAndroid*>(m_parent);
+        parent->m_needsSyncChildren = true;
+    }
+    m_needsSyncChildren = true;
+
+    setNeedsDisplay();
+    askForSync();
 }
 
 PlatformLayer* GraphicsLayerAndroid::platformLayer() const
