@@ -41,10 +41,6 @@
 #define bzero(b, len) (memset((b), '\0', (len)), (void) 0)
 #endif
 
-#if !defined(__GXX_EXPERIMENTAL_CXX0X__) && __cplusplus<201103L && !defined(constexpr)
-#define constexpr const
-#endif
-
 class SkBitmapRef;
 class SkCanvas;
 class SkMatrix;
@@ -403,7 +399,7 @@ private:
     float m_scale;
 
     // We try to not always compute the texture size, as this is quite heavy
-    static constexpr double s_computeTextureDelay = 0.2; // 200 ms
+    static const double s_computeTextureDelay = 0.2; // 200 ms
     double m_lastComputeTextureSize;
 
     // This mutex serves two purposes. (1) It ensures that certain operations
